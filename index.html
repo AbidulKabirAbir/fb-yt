@@ -1,747 +1,1210 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>StreamStation Pro</title>
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest">
     </script>
-
     <style>
+        :root {
+            --bg: #070b14;
+            --surface: #111827;
+            --surface2: #1a2332;
+            --border: #1e293b;
+            --text: #e2e8f0;
+            --text2: #94a3b8;
+            --accent: #38bdf8;
+            --accent2: #818cf8;
+            --danger: #f43f5e;
+            --card-radius: 14px;
+            --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
         }
 
         body {
-            background: #0b0f19;
-            color: #f1f5f9;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
             min-height: 100vh;
-            padding: 20px;
             display: flex;
             justify-content: center;
+            padding: 16px;
+            background-image:
+                radial-gradient(ellipse at 20% 0%, rgba(56, 189, 248, 0.05) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 100%, rgba(129, 140, 248, 0.04) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(20, 184, 166, 0.02) 0%, transparent 60%);
         }
 
         .app {
-            max-width: 1200px;
+            max-width: 1300px;
             width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
 
         .header {
             display: flex;
-            justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
             gap: 12px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #1e293b;
-            margin-bottom: 24px;
+            padding: 6px 0;
         }
-
-        .logo h1 {
-            font-size: 26px;
-            font-weight: 800;
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-shrink: 0;
+        }
+        .logo .icon-circle {
+            width: 42px;
+            height: 42px;
+            border-radius: 12px;
             background: linear-gradient(135deg, #38bdf8, #818cf8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            box-shadow: 0 8px 24px rgba(56, 189, 248, 0.25);
+        }
+        .logo h1 {
+            font-size: 22px;
+            font-weight: 800;
+            letter-spacing: -0.3px;
+            background: linear-gradient(135deg, #f1f5f9, #38bdf8);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            white-space: nowrap;
         }
-
-        .now-playing {
-            background: #1e293b;
-            padding: 6px 16px;
-            border-radius: 30px;
-            font-size: 14px;
-            border: 1px solid #334155;
+        .search-wrap {
+            flex: 1 1 240px;
+            min-width: 180px;
+            position: relative;
+            margin-left: auto;
+            max-width: 380px;
+        }
+        .search-wrap input {
+            width: 100%;
+            padding: 10px 14px 10px 38px;
+            border-radius: 28px;
+            border: 1.5px solid var(--border);
+            background: var(--surface);
+            color: #fff;
+            font-size: 13px;
+            outline: none;
+            transition: var(--transition);
+        }
+        .search-wrap input:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
+        }
+        .search-wrap .search-icon {
+            position: absolute;
+            left: 13px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            font-size: 15px;
+            pointer-events: none;
+        }
+        .now-playing-badge {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            padding: 8px 15px;
+            border-radius: 24px;
+            font-size: 12px;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+            flex-shrink: 0;
+        }
+        .now-playing-badge .live-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22c55e;
+            animation: pulse-dot 1.5s infinite;
+        }
+        @keyframes pulse-dot {
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6);
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(34, 197, 94, 0);
+            }
+        }
+        .now-playing-badge strong {
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #f1f5f9;
         }
 
         .player-wrapper {
-            background: #111827;
-            border-radius: 20px;
+            background: #0a0f1a;
+            border-radius: 16px;
             overflow: hidden;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            margin-bottom: 24px;
+            box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.6);
+            border: 1px solid var(--border);
             position: relative;
         }
-
         #playerContainer {
             width: 100%;
             aspect-ratio: 16 / 9;
-            background: #030712;
+            background: #020617;
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
         }
-
         #playerContainer iframe,
         #playerContainer video {
             width: 100%;
             height: 100%;
             border: 0;
             display: block;
+            position: absolute;
+            top: 0;
+            left: 0;
         }
-
-        /* ---- DuckDuckGo auto-unblock overlay ---- */
-        #ddgUnblockOverlay {
-            display: none;
+        .fallback-text {
+            color: #475569;
+            font-size: 16px;
+            text-align: center;
+            padding: 20px;
+            z-index: 0;
+        }
+        .player-overlay-empty {
             position: absolute;
             inset: 0;
-            background: rgba(11, 15, 25, 0.92);
-            backdrop-filter: blur(6px);
-            z-index: 50;
-            flex-direction: column;
+            display: flex;
             align-items: center;
             justify-content: center;
-            gap: 16px;
-            padding: 30px;
-            text-align: center;
-            border-radius: 0 0 20px 20px;
+            pointer-events: none;
+            z-index: 1;
         }
-
-        #ddgUnblockOverlay.visible {
+        .player-overlay-empty .big-icon {
+            font-size: 70px;
+            opacity: 0.25;
+            filter: grayscale(0.4);
+        }
+        .diagnostic-bar {
+            background: #0f1a2b;
+            border-top: 1px solid #1e3048;
+            padding: 10px 16px;
+            font-size: 11px;
+            color: #7b8ea8;
             display: flex;
-        }
-
-        #ddgUnblockOverlay .icon {
-            font-size: 48px;
-        }
-
-        #ddgUnblockOverlay h3 {
-            font-size: 20px;
-            color: #f1f5f9;
-        }
-
-        #ddgUnblockOverlay p {
-            color: #94a3b8;
-            max-width: 480px;
-            font-size: 14px;
-            line-height: 1.5;
-        }
-
-        #ddgUnblockOverlay .btn-group {
-            display: flex;
-            gap: 12px;
+            gap: 14px;
+            align-items: center;
             flex-wrap: wrap;
-            justify-content: center;
-            margin-top: 6px;
+            cursor: pointer;
+            user-select: none;
+            transition: var(--transition);
         }
-
-        #ddgUnblockOverlay .btn-unblock {
-            padding: 12px 32px;
-            border-radius: 40px;
-            border: none;
-            background: #38bdf8;
-            color: #0b0f19;
-            font-weight: 700;
+        .diagnostic-bar:hover {
+            color: #a0b8d0;
+        }
+        .diagnostic-bar .diag-icon {
+            color: #f59e0b;
             font-size: 15px;
-            cursor: pointer;
-            transition: 0.2s;
-            box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);
+        }
+        .diagnostic-detail {
+            display: none;
+            background: #0c1624;
+            border-top: 1px solid #1a2d44;
+            padding: 12px 16px;
+            font-size: 11px;
+            color: #6b85a0;
+            line-height: 1.6;
+        }
+        .diagnostic-detail.open {
+            display: block;
         }
 
-        #ddgUnblockOverlay .btn-unblock:hover {
-            background: #0ea5e9;
-            transform: scale(1.03);
-        }
-
-        #ddgUnblockOverlay .btn-skip {
-            padding: 10px 22px;
-            border-radius: 40px;
-            border: 1px solid #475569;
-            background: transparent;
-            color: #94a3b8;
-            font-weight: 600;
-            font-size: 13px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        #ddgUnblockOverlay .btn-skip:hover {
-            border-color: #94a3b8;
-            color: #f1f5f9;
-        }
-
-        #ddgUnblockOverlay .status-badge {
-            font-size: 12px;
-            color: #facc15;
-            background: #1e293b;
-            padding: 4px 14px;
-            border-radius: 20px;
-            border: 1px solid #334155;
-            display: inline-block;
-        }
-
-        /* ---- DIAGNOSTIC PANEL ---- */
-        .diagnostic-panel {
-            background: #182235;
-            border-top: 1px solid #2e3d56;
-            padding: 14px 20px;
-            font-size: 13px;
-            color: #94a3b8;
+        .tabs-container {
             display: flex;
-            gap: 15px;
-            align-items: center;
+            gap: 8px;
             flex-wrap: wrap;
+            align-items: center;
+        }
+        .tab-btn {
+            padding: 9px 17px;
+            border-radius: 24px;
+            border: 1.5px solid transparent;
+            background: var(--surface);
+            color: var(--text2);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            user-select: none;
+            letter-spacing: 0.2px;
+        }
+        .tab-btn:hover {
+            background: var(--surface2);
+            color: #e2e8f0;
+            border-color: #334155;
+        }
+        .tab-btn.active {
+            background: #1a2d44;
+            color: #fff;
+            border-color: var(--accent);
+            box-shadow: 0 0 14px rgba(56, 189, 248, 0.18);
+        }
+        .tab-count {
+            background: #1e293b;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-weight: 700;
+            color: #94a3b8;
+            min-width: 22px;
+            text-align: center;
+        }
+        .tab-btn.active .tab-count {
+            background: #38bdf8;
+            color: #0b141f;
         }
 
-        .diagnostic-title {
-            color: #f43f5e;
+        .channel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+            gap: 12px;
+            min-height: 100px;
+        }
+        .channel-card {
+            background: var(--surface);
+            border-radius: var(--card-radius);
+            overflow: hidden;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 2px solid transparent;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+        }
+        .channel-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 14px 28px rgba(0, 0, 0, 0.4);
+            border-color: #3b4f6b;
+            z-index: 2;
+        }
+        .channel-card.active {
+            border-color: var(--accent) !important;
+            box-shadow: 0 0 22px rgba(56, 189, 248, 0.3), 0 8px 20px rgba(0, 0, 0, 0.4);
+            z-index: 3;
+        }
+        .channel-card.active::after {
+            content: '● NOW';
+            position: absolute;
+            top: 6px;
+            left: 8px;
+            background: #22c55e;
+            color: #000;
+            font-size: 9px;
+            font-weight: 800;
+            padding: 3px 7px;
+            border-radius: 10px;
+            letter-spacing: 0.5px;
+            z-index: 5;
+            animation: pulse-badge 2s infinite;
+        }
+        @keyframes pulse-badge {
+            0%,
+            100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+        .card-thumb {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: #1a2335;
+            position: relative;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        .card-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .card-thumb .placeholder-thumb {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 38px;
+            position: absolute;
+            inset: 0;
+        }
+        .placeholder-thumb.yt-bg {
+            background: linear-gradient(135deg, #1a0a0a, #2d1111);
+        }
+        .placeholder-thumb.fb-bg {
+            background: linear-gradient(135deg, #0a1428, #112244);
+        }
+        .placeholder-thumb.web-bg {
+            background: linear-gradient(135deg, #0a1a18, #11302c);
+        }
+        .placeholder-thumb.tv-bg {
+            background: linear-gradient(135deg, #140a20, #251535);
+        }
+        .card-thumb .play-overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.45);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.25s;
+            font-size: 36px;
+            pointer-events: none;
+        }
+        .channel-card:hover .play-overlay {
+            opacity: 1;
+        }
+        .card-info {
+            padding: 10px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            flex: 1;
+        }
+        .card-info .cname {
             font-weight: 600;
+            font-size: 13px;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            color: #e2e8f0;
+        }
+        .card-info .cmeta {
             display: flex;
             align-items: center;
             gap: 6px;
         }
-
-        .diagnostic-panel .hint {
-            color: #64748b;
-            font-size: 12px;
-        }
-
-        .diagnostic-panel .hint strong {
-            color: #e2e8f0;
-        }
-
-        /* ---- CHANNEL GRID ---- */
-        .channel-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            gap: 14px;
-            margin-bottom: 32px;
-        }
-
-        .channel-card {
-            background: #1e293b;
-            border-radius: 14px;
-            padding: 16px 12px;
-            cursor: pointer;
-            transition: all 0.2s ease;
-            border: 2px solid transparent;
-            text-align: center;
-        }
-
-        .channel-card:hover {
-            transform: translateY(-2px);
-            background: #24334d;
-            border-color: #475569;
-        }
-
-        .channel-card.active {
-            border-color: #38bdf8;
-            background: #1e293b;
-            box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
-        }
-
-        .channel-card .emoji {
-            font-size: 28px;
-            display: block;
-            margin-bottom: 6px;
-        }
-
-        .channel-card .cname {
-            font-weight: 600;
-            font-size: 13px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .channel-card .ctype {
-            font-size: 10px;
-            padding: 2px 8px;
-            border-radius: 20px;
-            display: inline-block;
-            margin-top: 6px;
+        .ctype-badge {
+            font-size: 9px;
             font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 10px;
             text-transform: uppercase;
+            letter-spacing: 0.4px;
         }
-
-        .ctype.youtube {
+        .ctype-badge.youtube {
             background: #fee2e2;
-            color: #ef4444;
+            color: #dc2626;
         }
-        .ctype.facebook {
+        .ctype-badge.facebook {
             background: #dbeafe;
             color: #2563eb;
         }
-        .ctype.live {
-            background: #fef08a;
-            color: #ca8a04;
+        .ctype-badge.web {
+            background: #d1fae5;
+            color: #0d9488;
         }
-
-        /* ---- ADD SECTION ---- */
-        .add-section {
-            background: #111827;
-            border-radius: 16px;
-            padding: 20px;
-            border: 1px dashed #334155;
+        .ctype-badge.tv {
+            background: #ede9fe;
+            color: #7c3aed;
         }
-
-        .add-section h3 {
+        .card-delete {
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.7);
+            border: none;
+            color: #fff;
+            font-size: 12px;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 6;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+        .channel-card:hover .card-delete {
+            opacity: 1;
+        }
+        .card-delete:hover {
+            background: #ef4444;
+            color: #fff;
+        }
+        .no-results {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 40px;
+            color: #475569;
             font-size: 15px;
-            margin-bottom: 12px;
-            color: #cbd5e1;
         }
 
-        .add-form {
+        .add-section {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 18px 20px;
+            border: 1.5px dashed #1e3a50;
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
+            align-items: center;
         }
-
+        .add-section .add-title {
+            font-weight: 700;
+            font-size: 14px;
+            color: #cbd5e1;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .add-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            flex: 1 1 auto;
+            align-items: center;
+        }
         .add-form input {
-            flex: 1 1 200px;
-            padding: 10px 14px;
+            flex: 1 1 160px;
+            min-width: 130px;
+            padding: 9px 12px;
             border-radius: 8px;
-            border: 1px solid #334155;
+            border: 1.5px solid var(--border);
             background: #0f172a;
             color: #fff;
-            font-size: 13px;
+            font-size: 12px;
             outline: none;
+            transition: var(--transition);
         }
-
         .add-form input:focus {
-            border-color: #38bdf8;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.08);
         }
-
+        .add-form select {
+            padding: 9px 12px;
+            border-radius: 8px;
+            border: 1.5px solid var(--border);
+            background: #0f172a;
+            color: #fff;
+            font-size: 12px;
+            outline: none;
+            cursor: pointer;
+            flex-shrink: 0;
+            transition: var(--transition);
+        }
+        .add-form select:focus {
+            border-color: var(--accent);
+        }
         .add-form button {
-            padding: 10px 20px;
+            padding: 9px 18px;
             border-radius: 8px;
             border: none;
-            background: #38bdf8;
-            color: #0f172a;
+            background: linear-gradient(135deg, #38bdf8, #2d9fd6);
+            color: #0b141f;
             font-weight: 700;
-            font-size: 13px;
+            font-size: 12px;
             cursor: pointer;
-            transition: 0.1s;
+            transition: var(--transition);
+            white-space: nowrap;
+            flex-shrink: 0;
+            letter-spacing: 0.3px;
         }
-
         .add-form button:hover {
-            background: #0ea5e9;
+            background: linear-gradient(135deg, #0ea5e9, #1e8ab5);
+            box-shadow: 0 6px 18px rgba(56, 189, 248, 0.3);
+            transform: translateY(-1px);
+        }
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #1a2332;
+            color: #e2e8f0;
+            padding: 12px 20px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            border: 1px solid #334155;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .toast.error {
+            border-color: #f43f5e;
+            color: #fca5a5;
         }
 
-        .fallback-text {
-            color: #64748b;
-            font-size: 15px;
-        }
-
-        /* ---- RESPONSIVE ---- */
-        @media (max-width: 640px) {
-            .header {
-                flex-direction: column;
-                align-items: flex-start;
+        @media (max-width: 768px) {
+            .channel-grid {
+                grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+                gap: 8px;
             }
-            .diagnostic-panel {
+            .card-info {
+                padding: 7px 8px;
+            }
+            .card-info .cname {
+                font-size: 11px;
+            }
+            .tab-btn {
+                padding: 7px 12px;
+                font-size: 11px;
+            }
+            .header {
+                gap: 8px;
+            }
+            .logo h1 {
+                font-size: 17px;
+            }
+            .add-form {
                 flex-direction: column;
-                align-items: flex-start;
+                width: 100%;
+            }
+            .add-form input,
+            .add-form select,
+            .add-form button {
+                width: 100%;
+                flex: 1 1 auto;
+            }
+            .card-thumb .placeholder-thumb {
+                font-size: 28px;
+            }
+            .channel-card.active::after {
+                font-size: 8px;
+                padding: 2px 5px;
+                top: 4px;
+                left: 4px;
+            }
+        }
+        @media (max-width: 420px) {
+            .channel-grid {
+                grid-template-columns: repeat(2, 1fr);
                 gap: 6px;
             }
-            #ddgUnblockOverlay .btn-group {
-                flex-direction: column;
-                width: 100%;
+            .card-info .cname {
+                font-size: 10px;
             }
-            #ddgUnblockOverlay .btn-unblock,
-            #ddgUnblockOverlay .btn-skip {
-                width: 100%;
+            .tabs-container {
+                gap: 4px;
+            }
+            .tab-btn {
+                padding: 6px 10px;
+                font-size: 10px;
+                border-radius: 18px;
             }
         }
     </style>
 </head>
 <body>
-
     <div class="app">
-        <!-- HEADER -->
         <div class="header">
             <div class="logo">
-                <h1>📡 StreamStation Pro</h1>
+                <div class="icon-circle">📡</div>
+                <h1>StreamStation Pro</h1>
             </div>
-            <div class="now-playing">
-                📺 Playing: <strong id="currentChannelLabel">-</strong>
+            <div class="search-wrap">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" placeholder="Search channels by name or URL..." autocomplete="off" />
+            </div>
+            <div class="now-playing-badge">
+                <span class="live-dot"></span> Playing: <strong id="currentChannelLabel">-</strong>
             </div>
         </div>
 
-        <!-- PLAYER -->
         <div class="player-wrapper">
             <div id="playerContainer">
-                <div class="fallback-text" id="fallbackText">Select a channel below</div>
-
-                <!-- DuckDuckGo unblock overlay (injected by us) -->
-                <div id="ddgUnblockOverlay">
-                    <div class="icon">🦆</div>
-                    <h3>DuckDuckGo blocked this video</h3>
-                    <p>
-                        DuckDuckGo blocked Facebook tracking on this page.
-                        <br />
-                        Click <strong>Unblock</strong> below to load the video.
-                    </p>
-                    <div class="btn-group">
-                        <button class="btn-unblock" id="ddgUnblockBtn">🔓 Unblock Facebook Video</button>
-                        <button class="btn-skip" id="ddgSkipBtn">⏭️ Skip (stay blocked)</button>
-                    </div>
-                    <div class="status-badge" id="ddgStatusBadge">⏳ Waiting for blocker…</div>
+                <div class="player-overlay-empty" id="playerOverlay">
+                    <span class="big-icon">📺</span>
                 </div>
+                <div class="fallback-text" id="fallbackText">Select a channel below to start streaming</div>
             </div>
-
-            <!-- DIAGNOSTIC PANEL -->
-            <div class="diagnostic-panel">
-                <span class="diagnostic-title">⚠️ Video Black / Not Loading?</span>
-                <span>• If you see a DuckDuckGo blocker, we try to auto‑unblock it.</span>
-                <span class="hint">• If auto‑unblock fails, click the <strong>“Unblock”</strong> button that appears on the video.</span>
-                <span>• Make sure you're not opening this file directly from your desktop (use a local server).</span>
+            <div class="diagnostic-bar" id="diagnosticBar" title="Click for troubleshooting tips">
+                <span class="diag-icon">⚠️</span> Video not loading? Click here for tips
+                <span style="margin-left:auto;font-size:10px;">▼</span>
+            </div>
+            <div class="diagnostic-detail" id="diagnosticDetail">
+                <strong>Troubleshooting:</strong><br>
+                1. Turn off your browser's Ad-blocker or tracking shield for this page.<br>
+                2. Make sure you aren't opening this file straight from your desktop (use a local web server like Live Server).<br>
+                3. <strong style="color:#fca5a5;">Facebook videos:</strong> You must be logged into Facebook in another tab. The video also must be <u>public</u> and have embedding enabled by the page owner. Many Facebook pages disable embeds.<br>
+                4. If a YouTube stream shows "unavailable," the video may be region-locked or private.<br>
+                5. M3U8 streams need HLS.js support (loaded automatically).
             </div>
         </div>
 
-        <!-- CHANNEL GRID -->
+        <div class="tabs-container" id="tabsContainer">
+            <button class="tab-btn active" data-cat="all">🌐 All <span class="tab-count" id="countAll">0</span></button>
+            <button class="tab-btn" data-cat="youtube">▶️ YouTube <span class="tab-count" id="countYt">0</span></button>
+            <button class="tab-btn" data-cat="facebook">📱 Facebook <span class="tab-count" id="countFb">0</span></button>
+            <button class="tab-btn" data-cat="web">🌊 Web <span class="tab-count" id="countWeb">0</span></button>
+            <button class="tab-btn" data-cat="tv">📺 TV <span class="tab-count" id="countTv">0</span></button>
+        </div>
+
         <div class="channel-grid" id="channelGrid"></div>
 
-        <!-- ADD SECTION -->
         <div class="add-section">
-            <h3>➕ Add Custom Stream Link</h3>
+            <span class="add-title">➕ Add Stream</span>
             <div class="add-form">
-                <input type="text" id="channelNameInput" placeholder="Stream Title (e.g., Lofi Live)" />
-                <input type="text" id="channelUrlInput" placeholder="Paste YouTube, Facebook, or m3u8 URL here…" />
-                <button id="addChannelBtn">Load Stream</button>
+                <input type="text" id="channelNameInput" placeholder="Stream title (e.g., Lofi Beats)" />
+                <input type="text" id="channelUrlInput" placeholder="Paste YouTube, Facebook, or m3u8 URL..." />
+                <select id="channelCategorySelect">
+                    <option value="auto">🤖 Auto-detect</option>
+                    <option value="youtube">▶️ YouTube</option>
+                    <option value="facebook">📱 Facebook</option>
+                    <option value="web">🌊 Web</option>
+                    <option value="tv">📺 TV</option>
+                </select>
+                <button id="addChannelBtn">🚀 Load Stream</button>
             </div>
         </div>
     </div>
 
+    <div class="toast" id="toast"></div>
+
     <script>
         (function() {
-            'use strict';
-
-            // ─── DEFAULT CHANNELS ───────────────────────────────────────────────
+            // ── DEFAULT CHANNELS ──────────────────────────────
+            // Using the same Facebook URL from the working reference code (PlayStation public video)
             const defaultChannels = [
-                { name: 'Space Station Live', url: 'https://www.youtube.com/watch?v=21X5lGlDOfg', type: 'youtube',
-                    emoji: '🚀' },
-                { name: 'Lofi Girl Beats', url: 'https://www.youtube.com/watch?v=jfKfPfyJRdk', type: 'youtube',
+                { name: 'Space Station Live', url: 'https://www.youtube.com/watch?v=21X5lGlDOfg',
+                    category: 'youtube', emoji: '🚀' },
+                { name: 'Lofi Girl Beats 24/7', url: 'https://www.youtube.com/watch?v=jfKfPfyJRdk', category: 'youtube',
                     emoji: '🎧' },
-                { name: 'Aquarium Calm', url: 'https://www.youtube.com/watch?v=8r1CZpD4H6s', type: 'youtube',
+                { name: 'Aquarium Relaxation', url: 'https://www.youtube.com/watch?v=8r1CZpD4H6s', category: 'youtube',
                     emoji: '🐠' },
-                { name: 'Facebook Video', url: 'https://www.facebook.com/PlayStation/videos/10155554431506803/',
-                    type: 'facebook', emoji: '📱' }
+                { name: 'Nature Wildlife Cam', url: 'https://www.youtube.com/watch?v=36YnV9STBqc', category: 'youtube',
+                    emoji: '🌿' },
+                { name: 'Chillhop Radio', url: 'https://www.youtube.com/watch?v=5qap5aO4i9A', category: 'youtube',
+                    emoji: '🎵' },
+                { name: 'Sky News Live', url: 'https://www.youtube.com/watch?v=9Auq9mYxFEE', category: 'tv', emoji: '📰' },
+                { name: 'Euronews Live', url: 'https://www.youtube.com/watch?v=MsZd6QrJeME', category: 'tv', emoji: '🌍' },
+                // Facebook – exact same working URL from the reference code
+                { name: 'Facebook: PlayStation', url: 'https://www.facebook.com/PlayStation/videos/10155554431506803/',
+                    category: 'facebook', emoji: '🎮' },
+                { name: 'Facebook: Red Table Talk',
+                    url: 'https://www.facebook.com/redtabletalk/videos/693700561979212/', category: 'facebook',
+                    emoji: '🎙️' },
+                { name: 'Big Buck Bunny (Test)', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
+                    category: 'web', emoji: '🐰' },
+                { name: 'Akamai Test Stream',
+                    url: 'https://cph-msl.akamaized.net/hls/live/2000341/test/master.m3u8', category: 'web',
+                emoji: '🔬' },
+                { name: 'BBC Earth (via YT)', url: 'https://www.youtube.com/watch?v=8v6NtC2oYDE', category: 'tv',
+                    emoji: '🌎' },
+                { name: 'Jazz Radio 24/7', url: 'https://www.youtube.com/watch?v=1Z7nXgT3K4E', category: 'youtube',
+                    emoji: '🎷' },
             ];
 
-            // ─── STATE ──────────────────────────────────────────────────────────
+            // ── STATE ────────────────────────────────────────
             let channels = [];
-            let activeIndex = 0;
+            let activeIndex = -1;
+            let activeCategory = 'all';
+            let searchQuery = '';
             let hlsInstance = null;
             let currentPlayerElement = null;
-            let ddgObserver = null;
-            let ddgUnblockAttempted = false;
-            let ddgWatchInterval = null;
 
-            // ─── DOM REFS ──────────────────────────────────────────────────────
+            // ── DOM REFS ──────────────────────────────────────
             const grid = document.getElementById('channelGrid');
             const container = document.getElementById('playerContainer');
             const currentLabel = document.getElementById('currentChannelLabel');
             const fallbackText = document.getElementById('fallbackText');
-            const ddgOverlay = document.getElementById('ddgUnblockOverlay');
-            const ddgBtn = document.getElementById('ddgUnblockBtn');
-            const ddgSkipBtn = document.getElementById('ddgSkipBtn');
-            const ddgStatus = document.getElementById('ddgStatusBadge');
+            const playerOverlay = document.getElementById('playerOverlay');
+            const searchInput = document.getElementById('searchInput');
+            const toastEl = document.getElementById('toast');
+            const diagnosticBar = document.getElementById('diagnosticBar');
+            const diagnosticDetail = document.getElementById('diagnosticDetail');
+            const catSelect = document.getElementById('channelCategorySelect');
 
-            // ─── URL PARSER ────────────────────────────────────────────────────
-            function parseUrl(inputStr) {
-                const url = inputStr.trim();
-                if (url.includes('.m3u8')) {
-                    return { type: 'live', url: url };
-                }
-                // Facebook
-                if (/facebook\.com|fb\.watch|fb\.com/.test(url)) {
-                    const clean = encodeURIComponent(url);
-                    return {
-                        type: 'facebook',
-                        url: `https://www.facebook.com/plugins/video.php?href=${clean}&show_text=0&autoplay=1&mute=1`
-                    };
-                }
-                // YouTube
-                const ytRegex = /(?:youtube(?:-nocookie)?\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?vw=|\S*?v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
-                const match = url.match(ytRegex);
-                if (match && match[1]) {
-                    return {
-                        type: 'youtube',
-                        url: `https://www.youtube.com/embed/${match[1]}?mute=0&controls=1&playsinline=1&rel=0`
-                    };
-                }
-                return { type: 'youtube', url: url };
+            // ── TOAST ─────────────────────────────────────────
+            let toastTimer;
+
+            function showToast(msg, isError = false) {
+                clearTimeout(toastTimer);
+                toastEl.textContent = msg;
+                toastEl.className = 'toast ' + (isError ? 'error' : '');
+                requestAnimationFrame(() => toastEl.classList.add('show'));
+                toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2800);
             }
 
-            // ─── DUCKDUCKGO AUTO‑UNBLOCK ────────────────────────────────────
-            function setupDdgAutoUnblock() {
-                // 1) MutationObserver: watch for DuckDuckGo's blocker elements
-                if (ddgObserver) ddgObserver.disconnect();
-                ddgObserver = new MutationObserver(() => {
-                    tryFindAndClickDdgButton();
-                });
-                ddgObserver.observe(document.body, { childList: true, subtree: true });
-
-                // 2) Also poll for safety (in case observer misses it)
-                if (ddgWatchInterval) clearInterval(ddgWatchInterval);
-                ddgWatchInterval = setInterval(() => {
-                    tryFindAndClickDdgButton();
-                }, 800);
-
-                // 3) Click the button we expose in our overlay
-                ddgBtn.addEventListener('click', function(e) {
-                    e.stopPropagation();
-                    // Try the DuckDuckGo button first, then fallback to our own iframe reload
-                    const ddgNativeBtn = findDdgNativeButton();
-                    if (ddgNativeBtn) {
-                        ddgNativeBtn.click();
-                        ddgStatus.textContent = '✅ Unblock clicked! (native)';
-                        ddgStatus.style.color = '#4ade80';
-                        hideDdgOverlayAfterDelay();
-                    } else {
-                        // If we can't find the native button, try reloading the iframe with a trick
-                        attemptIframeReload();
-                        ddgStatus.textContent = '🔄 Reloading iframe…';
-                    }
-                    ddgUnblockAttempted = true;
-                });
-
-                ddgSkipBtn.addEventListener('click', function() {
-                    ddgOverlay.classList.remove('visible');
-                    ddgStatus.textContent = '⏭️ Skipped (blocked)';
-                    ddgStatus.style.color = '#facc15';
-                    if (ddgWatchInterval) clearInterval(ddgWatchInterval);
-                });
+            // ── URL PARSING (follows reference code exactly) ──
+            function extractYoutubeId(url) {
+                const regex =
+                    /(?:youtube(?:-nocookie)?\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
+                const match = url.match(regex);
+                return match ? match[1] : null;
             }
 
-            function findDdgNativeButton() {
-                // DuckDuckGo extension uses class "DuckDuckGoButton primary"
-                // Also look for any button containing "Unblock" text
-                const selectors = [
-                    '.DuckDuckGoButton.primary',
-                    '.DuckDuckGoButton',
-                    'button[class*="DuckDuckGo"]',
-                    'button:has(div:contains("Unblock"))',
-                    // fallback: any button with "Unblock" text
-                ];
-                for (const sel of selectors) {
-                    try {
-                        const el = document.querySelector(sel);
-                        if (el) return el;
-                    } catch (_) { /* ignore */ }
-                }
-                // Manual search for any button with "Unblock" text
-                const allBtns = document.querySelectorAll('button');
-                for (const btn of allBtns) {
-                    if (btn.textContent && btn.textContent.toLowerCase().includes('unblock')) {
-                        return btn;
-                    }
+            function getYoutubeThumbnail(url) {
+                const vidId = extractYoutubeId(url);
+                if (vidId) {
+                    return {
+                        videoId: vidId,
+                        thumbnail: `https://img.youtube.com/vi/${vidId}/hqdefault.jpg`,
+                        embedUrl: `https://www.youtube-nocookie.com/embed/${vidId}?autoplay=1&mute=1&controls=1&playsinline=1&rel=0`,
+                    };
                 }
                 return null;
             }
 
-            function tryFindAndClickDdgButton() {
-                // Only run if we haven't already succeeded and the overlay is not visible
-                if (ddgUnblockAttempted) return;
-                const btn = findDdgNativeButton();
-                if (btn) {
-                    ddgStatus.textContent = '🔍 DuckDuckGo blocker detected!';
-                    ddgStatus.style.color = '#facc15';
-                    // Show our overlay to give user control
-                    ddgOverlay.classList.add('visible');
+            /** Detect category — matches reference code logic */
+            function detectCategory(url) {
+                const u = url.trim();
+                if (/\.m3u8(\?.*)?$/i.test(u) || /\/hls\//i.test(u)) return 'web';
+                // Facebook detection — same regex as reference
+                if (/facebook\.com|fb\.watch|fb\.com/i.test(u)) return 'facebook';
+                if (/youtube\.com|youtu\.be|youtube-nocookie\.com/i.test(u)) return 'youtube';
+                if (/\.(mpd|m3u|ts|stream|hls)/i.test(u)) return 'web';
+                return 'web';
+            }
 
-                    // Auto‑click after a short delay (user can still click manually)
-                    // We do this only once per video load
-                    if (!ddgUnblockAttempted) {
-                        ddgUnblockAttempted = true;
-                        setTimeout(() => {
-                            // Try to click the native button
-                            const nativeBtn = findDdgNativeButton();
-                            if (nativeBtn) {
-                                nativeBtn.click();
-                                ddgStatus.textContent = '✅ Auto‑unblocked!';
-                                ddgStatus.style.color = '#4ade80';
-                                hideDdgOverlayAfterDelay();
-                            } else {
-                                ddgStatus.textContent = '⚠️ Could not auto‑click. Use the button below.';
-                                ddgStatus.style.color = '#f87171';
-                            }
-                        }, 1200);
-                    }
-                } else {
-                    // If no blocker is found but we're showing the overlay for a facebook video, hide it
-                    const isFacebook = channels[activeIndex] && channels[activeIndex].type === 'facebook';
-                    if (isFacebook && ddgOverlay.classList.contains('visible')) {
-                        // Check if the iframe loaded successfully (no blocker)
-                        const iframe = container.querySelector('iframe');
-                        if (iframe && iframe.src && iframe.src.includes('facebook.com')) {
-                            // If the iframe has content, the blocker might be gone
-                            // We'll hide the overlay after a moment
-                            setTimeout(() => {
-                                if (ddgOverlay.classList.contains('visible')) {
-                                    // Check if the iframe is actually showing content
-                                    // We can't read cross-origin content, but we can check if the iframe is visible
-                                    // and doesn't have the blocker overlay
-                                    const blockerInIframe = iframe.contentDocument &&
-                                        iframe.contentDocument.querySelector('.DuckDuckGoButton');
-                                    if (!blockerInIframe) {
-                                        ddgOverlay.classList.remove('visible');
-                                        ddgStatus.textContent = '✅ Video loaded!';
-                                        ddgStatus.style.color = '#4ade80';
-                                    }
-                                }
-                            }, 2000);
-                        }
-                    }
+            /**
+             * Build Facebook embed URL — follows the reference code pattern EXACTLY:
+             *   `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=0&autoplay=1&mute=1`
+             */
+            function buildFacebookEmbedUrl(url) {
+                const u = url.trim();
+                // If already a plugins/video.php URL, return it as-is
+                if (u.includes('facebook.com/plugins/video.php')) {
+                    return u;
                 }
+                const cleanFbUrl = encodeURIComponent(u);
+                return `https://www.facebook.com/plugins/video.php?href=${cleanFbUrl}&show_text=0&autoplay=1&mute=1`;
             }
 
-            function hideDdgOverlayAfterDelay() {
-                setTimeout(() => {
-                    ddgOverlay.classList.remove('visible');
-                }, 800);
-            }
-
-            function attemptIframeReload() {
-                // Reload the iframe with a cache-busting parameter
-                const iframe = container.querySelector('iframe');
-                if (iframe && iframe.src) {
-                    const url = new URL(iframe.src);
-                    url.searchParams.set('_t', Date.now());
-                    iframe.src = url.toString();
-                    ddgStatus.textContent = '🔄 Reloaded – checking…';
-                    // Re-enable the observer for the new load
-                    ddgUnblockAttempted = false;
-                    setTimeout(() => {
-                        tryFindAndClickDdgButton();
-                    }, 1500);
+            /** Build the final playback URL for the player */
+            function parseUrlForPlayback(url, category) {
+                const u = url.trim();
+                if (category === 'facebook') {
+                    return buildFacebookEmbedUrl(u);
                 }
+                if (category === 'youtube') {
+                    const ytInfo = getYoutubeThumbnail(u);
+                    if (ytInfo) return ytInfo.embedUrl;
+                    return u;
+                }
+                return u;
             }
 
-            // ─── PLAY CHANNEL ──────────────────────────────────────────────────
-            function playChannel(index) {
-                // Cleanup
+            function enrichChannel(raw) {
+                const category = raw.category || detectCategory(raw.url);
+                const ytInfo = (category === 'youtube') ? getYoutubeThumbnail(raw.url) : null;
+                return {
+                    name: raw.name || 'Untitled Stream',
+                    url: raw.url,
+                    originalUrl: raw.originalUrl || raw.url,
+                    category: category,
+                    emoji: raw.emoji || getDefaultEmoji(category),
+                    thumbnail: ytInfo ? ytInfo.thumbnail : null,
+                    videoId: ytInfo ? ytInfo.videoId : null,
+                    playbackUrl: parseUrlForPlayback(raw.url, category),
+                };
+            }
+
+            function getDefaultEmoji(category) {
+                const map = { youtube: '▶️', facebook: '📱', web: '🌊', tv: '📺' };
+                return map[category] || '📡';
+            }
+
+            // ── PLAYER LOGIC (follows reference code structure) ──
+            function destroyCurrentPlayer() {
                 if (hlsInstance) { hlsInstance.destroy();
                     hlsInstance = null; }
                 if (currentPlayerElement) { currentPlayerElement.remove();
                     currentPlayerElement = null; }
-                if (ddgObserver) { ddgObserver.disconnect();
-                    ddgObserver = null; }
-                if (ddgWatchInterval) { clearInterval(ddgWatchInterval);
-                    ddgWatchInterval = null; }
-                ddgUnblockAttempted = false;
-                ddgOverlay.classList.remove('visible');
-                ddgStatus.textContent = '⏳ Waiting for blocker…';
-                ddgStatus.style.color = '#facc15';
+            }
 
+            function playChannel(index) {
+                destroyCurrentPlayer();
                 fallbackText.style.display = 'none';
+                if (playerOverlay) playerOverlay.style.display = 'none';
+
+                if (index < 0 || index >= channels.length) {
+                    currentLabel.textContent = '-';
+                    fallbackText.style.display = '';
+                    if (playerOverlay) playerOverlay.style.display = '';
+                    return;
+                }
+
                 const channel = channels[index];
-                if (!channel) return;
-
                 currentLabel.textContent = channel.name;
-                const target = parseUrl(channel.url);
+                activeIndex = index;
+                localStorage.setItem('stream_station_idx', activeIndex);
 
-                if (target.type === 'youtube' || target.type === 'facebook') {
+                const playbackUrl = channel.playbackUrl || parseUrlForPlayback(channel.url, channel.category);
+                const category = channel.category;
+
+                // YouTube + Facebook → iframe (exactly as reference code does)
+                if (category === 'youtube' || category === 'facebook') {
                     const iframe = document.createElement('iframe');
-                    iframe.src = target.url;
-                    iframe.setAttribute('allow', 'autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; fullscreen');
+                    iframe.src = playbackUrl;
+                    // Same attributes as reference code
+                    iframe.setAttribute('allow',
+                        'autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; fullscreen');
                     iframe.setAttribute('allowfullscreen', 'true');
                     iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
                     iframe.setAttribute('frameborder', '0');
                     iframe.setAttribute('scrolling', 'no');
+                    iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border:0;';
                     container.appendChild(iframe);
                     currentPlayerElement = iframe;
-
-                    // If it's Facebook, arm the DuckDuckGo unblocker
-                    if (target.type === 'facebook') {
-                        // Show a brief "waiting" message
-                        ddgOverlay.classList.add('visible');
-                        ddgStatus.textContent = '🦆 Checking for DuckDuckGo blocker…';
-                        ddgStatus.style.color = '#facc15';
-                        // Start the auto-unblock machinery
-                        setTimeout(() => {
-                            setupDdgAutoUnblock();
-                            // Also try immediately
-                            setTimeout(tryFindAndClickDdgButton, 600);
-                        }, 400);
-                    }
-                } else if (target.type === 'live') {
+                } else {
+                    // Web / TV → video element (HLS or direct)
                     const video = document.createElement('video');
                     video.controls = true;
                     video.autoplay = true;
                     video.muted = true;
                     video.playsInline = true;
+                    video.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;';
                     container.appendChild(video);
                     currentPlayerElement = video;
 
-                    if (Hls.isSupported()) {
-                        hlsInstance = new Hls();
-                        hlsInstance.loadSource(target.url);
+                    if (playbackUrl.includes('.m3u8') && Hls.isSupported()) {
+                        hlsInstance = new Hls({ enableWorker: true, lowLatencyMode: false });
+                        hlsInstance.loadSource(playbackUrl);
                         hlsInstance.attachMedia(video);
+                        hlsInstance.on(Hls.Events.ERROR, function(event, data) {
+                            if (data.fatal) showToast('⚠️ Stream error — the M3U8 source may be offline.', true);
+                        });
                     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                        video.src = target.url;
+                        video.src = playbackUrl;
+                    } else if (!playbackUrl.includes('.m3u8')) {
+                        video.src = playbackUrl;
                     }
                 }
+                updateActiveCardInGrid();
             }
 
-            // ─── RENDER GRID ──────────────────────────────────────────────────
-            function renderGrid() {
-                grid.innerHTML = '';
-                channels.forEach((ch, idx) => {
-                    const card = document.createElement('div');
-                    card.className = `channel-card ${idx === activeIndex ? 'active' : ''}`;
-                    card.innerHTML = `
-                        <span class="emoji">${ch.emoji || '📺'}</span>
-                        <div class="cname">${ch.name}</div>
-                        <span class="ctype ${ch.type}">${ch.type}</span>
-                    `;
-                    card.addEventListener('click', () => {
-                        activeIndex = idx;
-                        renderGrid();
-                        playChannel(activeIndex);
-                        localStorage.setItem('stream_station_idx', activeIndex);
-                    });
-                    grid.appendChild(card);
+            function updateActiveCardInGrid() {
+                document.querySelectorAll('.channel-card').forEach(card => {
+                    const idx = parseInt(card.dataset.index);
+                    card.classList.toggle('active', idx === activeIndex);
                 });
             }
 
-            // ─── INIT ──────────────────────────────────────────────────────────
-            const savedChannels = localStorage.getItem('stream_station_chans');
-            const savedIdx = localStorage.getItem('stream_station_idx');
-
-            if (savedChannels) {
-                channels = JSON.parse(savedChannels);
-                activeIndex = parseInt(savedIdx) || 0;
-            } else {
-                channels = defaultChannels;
-                activeIndex = 0;
-            }
-
-            // ─── ADD CHANNEL ──────────────────────────────────────────────────
-            document.getElementById('addChannelBtn').addEventListener('click', () => {
-                const nameInp = document.getElementById('channelNameInput');
-                const urlInp = document.getElementById('channelUrlInput');
-                if (!nameInp.value || !urlInp.value) {
-                    alert('Please fill out both the title and stream link fields.');
-                    return;
+            // ── RENDER GRID ────────────────────────────────────
+            function getFilteredChannels() {
+                let filtered = [...channels];
+                if (activeCategory !== 'all') {
+                    filtered = filtered.filter(ch => ch.category === activeCategory);
                 }
-                const info = parseUrl(urlInp.value);
-                channels.push({
-                    name: nameInp.value.trim(),
-                    url: urlInp.value.trim(),
-                    type: info.type,
-                    emoji: info.type === 'youtube' ? '▶️' : (info.type === 'facebook' ? '📱' : '🔴')
-                });
-                activeIndex = channels.length - 1;
-                localStorage.setItem('stream_station_chans', JSON.stringify(channels));
-                localStorage.setItem('stream_station_idx', activeIndex);
-                nameInp.value = '';
-                urlInp.value = '';
+                if (searchQuery.trim()) {
+                    const q = searchQuery.trim().toLowerCase();
+                    filtered = filtered.filter(ch =>
+                        ch.name.toLowerCase().includes(q) ||
+                        ch.url.toLowerCase().includes(q) ||
+                        (ch.originalUrl && ch.originalUrl.toLowerCase().includes(q))
+                    );
+                }
+                return filtered;
+            }
+
+            function renderGrid() {
+                const filtered = getFilteredChannels();
+                grid.innerHTML = '';
+                if (filtered.length === 0) {
+                    grid.innerHTML =
+                        '<div class="no-results">📭 No channels found. Try a different search or add a new stream below.</div>';
+                } else {
+                    filtered.forEach(ch => {
+                        const globalIndex = channels.indexOf(ch);
+                        const card = document.createElement('div');
+                        card.className = 'channel-card';
+                        if (globalIndex === activeIndex) card.classList.add('active');
+                        card.dataset.index = globalIndex;
+
+                        let thumbHTML = '';
+                        if (ch.thumbnail) {
+                            thumbHTML =
+                                `<img src="${ch.thumbnail}" alt="${ch.name}" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />`;
+                            thumbHTML +=
+                                `<div class="placeholder-thumb ${ch.category}-bg" style="display:none;">${ch.emoji}</div>`;
+                        } else {
+                            thumbHTML =
+                                `<div class="placeholder-thumb ${ch.category}-bg">${ch.emoji}</div>`;
+                        }
+                        thumbHTML += `<div class="play-overlay">▶️</div>`;
+
+                        card.innerHTML = `
+                            <div class="card-thumb">${thumbHTML}</div>
+                            <div class="card-info">
+                                <span class="cname" title="${ch.name}">${ch.name}</span>
+                                <div class="cmeta">
+                                    <span class="ctype-badge ${ch.category}">${ch.category}</span>
+                                </div>
+                            </div>
+                            <button class="card-delete" title="Remove channel" data-index="${globalIndex}">✕</button>
+                        `;
+
+                        card.addEventListener('click', (e) => {
+                            if (e.target.closest('.card-delete')) return;
+                            activeIndex = globalIndex;
+                            renderGrid();
+                            playChannel(activeIndex);
+                            localStorage.setItem('stream_station_idx', activeIndex);
+                        });
+
+                        card.querySelector('.card-delete').addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            e.preventDefault();
+                            removeChannel(globalIndex);
+                        });
+
+                        grid.appendChild(card);
+                    });
+                }
+                updateCategoryCounts();
+            }
+
+            function removeChannel(index) {
+                if (index < 0 || index >= channels.length) return;
+                const name = channels[index].name;
+                channels.splice(index, 1);
+                if (activeIndex >= channels.length) activeIndex = channels.length - 1;
+                if (activeIndex < 0) activeIndex = -1;
+                saveChannels();
                 renderGrid();
-                playChannel(activeIndex);
-            });
+                if (activeIndex >= 0) {
+                    playChannel(activeIndex);
+                } else {
+                    destroyCurrentPlayer();
+                    fallbackText.style.display = '';
+                    if (playerOverlay) playerOverlay.style.display = '';
+                    currentLabel.textContent = '-';
+                }
+                showToast(`🗑️ Removed "${name}"`);
+            }
 
-            // ─── START ─────────────────────────────────────────────────────────
-            renderGrid();
-            playChannel(activeIndex);
+            function updateCategoryCounts() {
+                const counts = { all: channels.length, youtube: 0, facebook: 0, web: 0, tv: 0 };
+                channels.forEach(ch => { if (counts[ch.category] !== undefined) counts[ch.category]++; });
+                document.getElementById('countAll').textContent = counts.all;
+                document.getElementById('countYt').textContent = counts.youtube;
+                document.getElementById('countFb').textContent = counts.facebook;
+                document.getElementById('countWeb').textContent = counts.web;
+                document.getElementById('countTv').textContent = counts.tv;
+            }
 
-            // ─── GLOBAL: expose for debugging ──────────────────────────────
-            window.__streamStation = { channels, activeIndex, playChannel, renderGrid };
+            // ── PERSISTENCE ────────────────────────────────────
+            function saveChannels() {
+                const toSave = channels.map(ch => ({
+                    name: ch.name,
+                    url: ch.url,
+                    originalUrl: ch.originalUrl || ch.url,
+                    category: ch.category,
+                    emoji: ch.emoji,
+                    thumbnail: ch.thumbnail,
+                    videoId: ch.videoId,
+                    playbackUrl: ch.playbackUrl,
+                }));
+                localStorage.setItem('stream_station_chans_v3', JSON.stringify(toSave));
+                localStorage.setItem('stream_station_idx', activeIndex);
+            }
 
+            function loadChannels() {
+                const saved = localStorage.getItem('stream_station_chans_v3');
+                const savedIdx = parseInt(localStorage.getItem('stream_station_idx')) || 0;
+                if (saved) {
+                    try {
+                        const parsed = JSON.parse(saved);
+                        channels = parsed.map(raw => enrichChannel(raw));
+                        activeIndex = Math.min(savedIdx, channels.length - 1);
+                        if (activeIndex < 0) activeIndex = channels.length > 0 ? 0 : -1;
+                        return;
+                    } catch (e) {}
+                }
+                // Fallback: try legacy key
+                const legacy = localStorage.getItem('stream_station_chans_v2') || localStorage.getItem(
+                    'stream_station_chans');
+                if (legacy) {
+                    try {
+                        const parsed = JSON.parse(legacy);
+                        channels = parsed.map(raw => enrichChannel(raw));
+                        activeIndex = Math.min(savedIdx, channels.length - 1);
+                        if (activeIndex < 0) activeIndex = channels.length > 0 ? 0 : -1;
+                        saveChannels();
+                        return;
+                    } catch (e) {}
+                }
+                channels = defaultChannels.map(raw => enrichChannel(raw));
+                activeIndex = channels.length > 0 ? 0 : -1;
+                saveChannels();
+            }
+
+            // ── TABS ───────────────────────────────────────────
+            function setupTabs() {
+                const tabs = document.querySelectorAll('.tab-btn');
+                tabs.forEach(tab => {
+                    tab.addEventListener('click', () => {
+                        tabs.forEach(t => t.classList.remove('active'));
+                        tab.classList.add('active');
+                        activeCategory = tab.dataset.cat;
+                        localStorage.setItem('stream_station_cat', activeCategory);
+                        renderGrid();
+                    });
+                });
+                const savedCat = localStorage.getItem('stream_station_cat');
+                if (savedCat && ['all', 'youtube', 'facebook', 'web', 'tv'].includes(savedCat)) {
+                    activeCategory = savedCat;
+                    tabs.forEach(t => t.classList.toggle('active', t.dataset.cat === activeCategory));
+                }
+            }
+
+            // ── AUTO-DETECT ────────────────────────────────────
+            function setupAutoDetect() {
+                const urlInput = document.getElementById('channelUrlInput');
+                urlInput.addEventListener('input', () => {
+                    if (catSelect.value === 'auto' || catSelect.dataset.autoSet === 'true') {
+                        const detected = detectCategory(urlInput.value);
+                        catSelect.value = detected;
+                        catSelect.dataset.autoSet = 'true';
+                    }
+                });
+                catSelect.addEventListener('change', () => {
+                    catSelect.dataset.autoSet = (catSelect.value === 'auto') ? 'true' : 'false';
+                    if (catSelect.value === 'auto') {
+                        const detected = detectCategory(urlInput.value);
+                        catSelect.value = detected;
+                    }
+                });
+            }
+
+            // ── ADD CHANNEL ────────────────────────────────────
+            function setupAddButton() {
+                document.getElementById('addChannelBtn').addEventListener('click', () => {
+                    const nameInp = document.getElementById('channelNameInput');
+                    const urlInp = document.getElementById('channelUrlInput');
+                    const catVal = catSelect.value;
+                    if (!nameInp.value.trim() || !urlInp.value.trim()) {
+                        showToast('⚠️ Please fill out both the title and stream link.', true);
+                        return;
+                    }
+                    let category = (catVal === 'auto') ? detectCategory(urlInp.value) : catVal;
+                    const enriched = enrichChannel({
+                        name: nameInp.value.trim(),
+                        url: urlInp.value.trim(),
+                        originalUrl: urlInp.value.trim(),
+                        category: category,
+                        emoji: getDefaultEmoji(category),
+                    });
+                    channels.push(enriched);
+                    activeIndex = channels.length - 1;
+                    saveChannels();
+                    activeCategory = category;
+                    document.querySelectorAll('.tab-btn').forEach(t => t.classList.toggle('active', t.dataset
+                        .cat === activeCategory));
+                    localStorage.setItem('stream_station_cat', activeCategory);
+                    nameInp.value = '';
+                    urlInp.value = '';
+                    catSelect.value = 'auto';
+                    catSelect.dataset.autoSet = 'true';
+                    renderGrid();
+                    playChannel(activeIndex);
+                    if (category === 'facebook') {
+                        showToast(
+                            '✅ Added! Facebook videos require you to be logged into Facebook in another tab.'
+                            );
+                    } else {
+                        showToast(`✅ Added "${enriched.name}" to ${category} section!`);
+                    }
+                });
+            }
+
+            // ── SEARCH ─────────────────────────────────────────
+            function setupSearch() {
+                let debounce;
+                searchInput.addEventListener('input', () => {
+                    clearTimeout(debounce);
+                    debounce = setTimeout(() => {
+                        searchQuery = searchInput.value;
+                        renderGrid();
+                    }, 200);
+                });
+                searchInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        searchInput.value = '';
+                        searchQuery = '';
+                        renderGrid();
+                        searchInput.blur();
+                    }
+                });
+            }
+
+            // ── DIAGNOSTIC TOGGLE ──────────────────────────────
+            function setupDiagnostic() {
+                diagnosticBar.addEventListener('click', () => {
+                    diagnosticDetail.classList.toggle('open');
+                    const arrow = diagnosticBar.querySelector('span:last-child');
+                    if (arrow) arrow.textContent = diagnosticDetail.classList.contains('open') ? '▲' : '▼';
+                });
+            }
+
+            // ── KEYBOARD SHORTCUTS ─────────────────────────────
+            function setupKeyboard() {
+                document.addEventListener('keydown', (e) => {
+                    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName ===
+                        'TEXTAREA') return;
+                    if (e.key === 'f' || e.key === 'F') {
+                        e.preventDefault();
+                        searchInput.focus();
+                    }
+                });
+            }
+
+            // ── INIT ───────────────────────────────────────────
+            function init() {
+                loadChannels();
+                setupTabs();
+                setupAutoDetect();
+                setupAddButton();
+                setupSearch();
+                setupDiagnostic();
+                setupKeyboard();
+                renderGrid();
+                if (activeIndex >= 0 && activeIndex < channels.length) {
+                    playChannel(activeIndex);
+                } else if (channels.length > 0) {
+                    activeIndex = 0;
+                    playChannel(0);
+                } else {
+                    currentLabel.textContent = '-';
+                }
+                updateCategoryCounts();
+                console.log(
+                    `🚀 StreamStation Pro ready — ${channels.length} channels. Press "F" to search.`
+                );
+            }
+
+            init();
         })();
     </script>
 </body>
