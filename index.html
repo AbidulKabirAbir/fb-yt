@@ -3,7 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StreamStation Pro</title>
+    <title>StreamStation Pro • Synced Streaming Hub</title>
+    <!-- Firebase SDK (compat) for cross‑device real‑time sync -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js">
+    </script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js">
+    </script>
+    <!-- HLS.js for M3U8 streams -->
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest">
     </script>
     <style>
@@ -15,10 +21,26 @@
             --text: #e2e8f0;
             --text2: #94a3b8;
             --accent: #38bdf8;
-            --accent2: #818cf8;
+            --accent-glow: rgba(56, 189, 248, 0.25);
             --danger: #f43f5e;
             --card-radius: 14px;
             --transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.25);
+            --shadow-hover: 0 14px 28px rgba(0, 0, 0, 0.4);
+            --font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+        }
+
+        body.light {
+            --bg: #f8fafc;
+            --surface: #ffffff;
+            --surface2: #f1f5f9;
+            --border: #cbd5e1;
+            --text: #0f172a;
+            --text2: #475569;
+            --accent: #0284c7;
+            --accent-glow: rgba(2, 132, 199, 0.2);
+            --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.08);
+            --shadow-hover: 0 10px 20px rgba(0, 0, 0, 0.12);
         }
 
         * {
@@ -30,31 +52,39 @@
         body {
             background: var(--bg);
             color: var(--text);
-            font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, sans-serif;
+            font-family: var(--font-family);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             padding: 16px;
             background-image:
-                radial-gradient(ellipse at 20% 0%, rgba(56, 189, 248, 0.05) 0%, transparent 50%),
-                radial-gradient(ellipse at 80% 100%, rgba(129, 140, 248, 0.04) 0%, transparent 50%),
-                radial-gradient(ellipse at 50% 50%, rgba(20, 184, 166, 0.02) 0%, transparent 60%);
+                radial-gradient(ellipse at 20% 0%, rgba(56, 189, 248, 0.06) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 100%, rgba(129, 140, 248, 0.05) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 50%, rgba(20, 184, 166, 0.03) 0%, transparent 60%);
+            transition: background 0.3s, color 0.3s;
+        }
+
+        body.light {
+            background-image:
+                radial-gradient(ellipse at 20% 0%, rgba(56, 189, 248, 0.03) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 100%, rgba(129, 140, 248, 0.02) 0%, transparent 50%);
         }
 
         .app {
-            max-width: 1300px;
+            max-width: 1400px;
             width: 100%;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 14px;
         }
 
+        /* ── HEADER ──────────────────────── */
         .header {
             display: flex;
             align-items: center;
             flex-wrap: wrap;
             gap: 12px;
-            padding: 6px 0;
+            padding: 4px 0;
         }
         .logo {
             display: flex;
@@ -71,31 +101,77 @@
             align-items: center;
             justify-content: center;
             font-size: 22px;
-            box-shadow: 0 8px 24px rgba(56, 189, 248, 0.25);
+            box-shadow: 0 8px 24px var(--accent-glow);
+            transition: all 0.3s;
         }
         .logo h1 {
-            font-size: 22px;
+            font-size: clamp(18px, 2.2vw, 22px);
             font-weight: 800;
             letter-spacing: -0.3px;
-            background: linear-gradient(135deg, #f1f5f9, #38bdf8);
+            background: linear-gradient(135deg, var(--text), #38bdf8);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             white-space: nowrap;
         }
-        .search-wrap {
-            flex: 1 1 240px;
-            min-width: 180px;
-            position: relative;
+        .header-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
             margin-left: auto;
-            max-width: 380px;
+        }
+        .icon-btn {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text2);
+            border-radius: 8px;
+            padding: 7px 12px;
+            font-size: 13px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+            transition: var(--transition);
+            font-weight: 600;
+        }
+        .icon-btn:hover {
+            background: var(--surface2);
+            color: var(--text);
+            border-color: var(--accent);
+        }
+        .theme-toggle {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            color: var(--text2);
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        .theme-toggle:hover {
+            background: var(--surface2);
+            color: var(--text);
+            border-color: var(--accent);
+        }
+        .search-wrap {
+            flex: 1 1 200px;
+            min-width: 160px;
+            position: relative;
+            max-width: 340px;
         }
         .search-wrap input {
             width: 100%;
-            padding: 10px 14px 10px 38px;
+            padding: 9px 14px 9px 36px;
             border-radius: 28px;
             border: 1.5px solid var(--border);
             background: var(--surface);
-            color: #fff;
+            color: var(--text);
             font-size: 13px;
             outline: none;
             transition: var(--transition);
@@ -106,23 +182,23 @@
         }
         .search-wrap .search-icon {
             position: absolute;
-            left: 13px;
+            left: 12px;
             top: 50%;
             transform: translateY(-50%);
             color: #64748b;
-            font-size: 15px;
+            font-size: 14px;
             pointer-events: none;
         }
         .now-playing-badge {
             background: var(--surface2);
             border: 1px solid var(--border);
-            padding: 8px 15px;
+            padding: 6px 14px;
             border-radius: 24px;
             font-size: 12px;
             white-space: nowrap;
             display: flex;
             align-items: center;
-            gap: 7px;
+            gap: 6px;
             flex-shrink: 0;
         }
         .now-playing-badge .live-dot {
@@ -142,12 +218,13 @@
             }
         }
         .now-playing-badge strong {
-            max-width: 180px;
+            max-width: 150px;
             overflow: hidden;
             text-overflow: ellipsis;
-            color: #f1f5f9;
+            color: var(--text);
         }
 
+        /* ── PLAYER ─────────────────────── */
         .player-wrapper {
             background: #0a0f1a;
             border-radius: 16px;
@@ -155,6 +232,10 @@
             box-shadow: 0 20px 50px -15px rgba(0, 0, 0, 0.6);
             border: 1px solid var(--border);
             position: relative;
+        }
+        body.light .player-wrapper {
+            background: #e2e8f0;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         }
         #playerContainer {
             width: 100%;
@@ -164,6 +245,9 @@
             align-items: center;
             justify-content: center;
             position: relative;
+        }
+        body.light #playerContainer {
+            background: #cbd5e1;
         }
         #playerContainer iframe,
         #playerContainer video {
@@ -193,8 +277,25 @@
         }
         .player-overlay-empty .big-icon {
             font-size: 70px;
-            opacity: 0.25;
+            opacity: 0.2;
             filter: grayscale(0.4);
+        }
+        .pip-btn {
+            position: absolute;
+            bottom: 12px;
+            right: 12px;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 12px;
+            cursor: pointer;
+            z-index: 10;
+            display: none;
+        }
+        .pip-btn.active {
+            display: block;
         }
         .diagnostic-bar {
             background: #0f1a2b;
@@ -230,60 +331,85 @@
             display: block;
         }
 
+        /* ── TABS & CONTROLS ───────────── */
+        .controls-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: space-between;
+        }
         .tabs-container {
             display: flex;
-            gap: 8px;
+            gap: 6px;
             flex-wrap: wrap;
             align-items: center;
         }
         .tab-btn {
-            padding: 9px 17px;
-            border-radius: 24px;
+            padding: 7px 14px;
+            border-radius: 20px;
             border: 1.5px solid transparent;
             background: var(--surface);
             color: var(--text2);
             cursor: pointer;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
             white-space: nowrap;
             transition: var(--transition);
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 5px;
             user-select: none;
-            letter-spacing: 0.2px;
         }
         .tab-btn:hover {
             background: var(--surface2);
-            color: #e2e8f0;
+            color: var(--text);
             border-color: #334155;
         }
         .tab-btn.active {
             background: #1a2d44;
             color: #fff;
             border-color: var(--accent);
-            box-shadow: 0 0 14px rgba(56, 189, 248, 0.18);
+            box-shadow: 0 0 14px var(--accent-glow);
         }
         .tab-count {
             background: #1e293b;
-            padding: 2px 8px;
-            border-radius: 12px;
+            padding: 2px 7px;
+            border-radius: 10px;
             font-size: 10px;
             font-weight: 700;
             color: #94a3b8;
-            min-width: 22px;
+            min-width: 20px;
             text-align: center;
         }
         .tab-btn.active .tab-count {
             background: #38bdf8;
             color: #0b141f;
         }
+        .sort-shuffle {
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
 
+        /* ── CHANNEL GRID ──────────────── */
         .channel-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
-            gap: 12px;
+            grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+            gap: 10px;
             min-height: 100px;
+        }
+        @media (min-width: 900px) {
+            .channel-grid {
+                grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+                gap: 12px;
+            }
+        }
+        @media (max-width: 600px) {
+            .channel-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                gap: 8px;
+            }
         }
         .channel-card {
             background: var(--surface);
@@ -295,30 +421,30 @@
             position: relative;
             display: flex;
             flex-direction: column;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+            box-shadow: var(--shadow-card);
         }
         .channel-card:hover {
             transform: translateY(-3px);
-            box-shadow: 0 14px 28px rgba(0, 0, 0, 0.4);
+            box-shadow: var(--shadow-hover);
             border-color: #3b4f6b;
             z-index: 2;
         }
         .channel-card.active {
             border-color: var(--accent) !important;
-            box-shadow: 0 0 22px rgba(56, 189, 248, 0.3), 0 8px 20px rgba(0, 0, 0, 0.4);
+            box-shadow: 0 0 22px var(--accent-glow), var(--shadow-hover);
             z-index: 3;
         }
         .channel-card.active::after {
             content: '● NOW';
             position: absolute;
-            top: 6px;
-            left: 8px;
+            top: 5px;
+            left: 5px;
             background: #22c55e;
             color: #000;
-            font-size: 9px;
+            font-size: 8px;
             font-weight: 800;
-            padding: 3px 7px;
-            border-radius: 10px;
+            padding: 2px 6px;
+            border-radius: 8px;
             letter-spacing: 0.5px;
             z-index: 5;
             animation: pulse-badge 2s infinite;
@@ -352,7 +478,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 38px;
+            font-size: 32px;
             position: absolute;
             inset: 0;
         }
@@ -371,45 +497,46 @@
         .card-thumb .play-overlay {
             position: absolute;
             inset: 0;
-            background: rgba(0, 0, 0, 0.45);
+            background: rgba(0, 0, 0, 0.4);
             display: flex;
             align-items: center;
             justify-content: center;
             opacity: 0;
-            transition: opacity 0.25s;
-            font-size: 36px;
+            transition: opacity 0.2s;
+            font-size: 30px;
             pointer-events: none;
         }
         .channel-card:hover .play-overlay {
             opacity: 1;
         }
         .card-info {
-            padding: 10px 12px;
+            padding: 8px 10px;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 3px;
             flex: 1;
         }
         .card-info .cname {
             font-weight: 600;
-            font-size: 13px;
+            font-size: 12px;
             line-height: 1.3;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
-            color: #e2e8f0;
+            color: var(--text);
         }
         .card-info .cmeta {
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
+            flex-wrap: wrap;
         }
         .ctype-badge {
             font-size: 9px;
             font-weight: 700;
-            padding: 3px 8px;
-            border-radius: 10px;
+            padding: 2px 7px;
+            border-radius: 8px;
             text-transform: uppercase;
             letter-spacing: 0.4px;
         }
@@ -429,69 +556,74 @@
             background: #ede9fe;
             color: #7c3aed;
         }
-        .card-delete {
+        .card-actions {
             position: absolute;
-            top: 5px;
-            right: 5px;
-            width: 22px;
-            height: 22px;
+            top: 4px;
+            right: 4px;
+            display: flex;
+            gap: 3px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 6;
+        }
+        .channel-card:hover .card-actions {
+            opacity: 1;
+        }
+        .card-btn {
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
             background: rgba(0, 0, 0, 0.7);
             border: none;
             color: #fff;
-            font-size: 12px;
+            font-size: 11px;
             cursor: pointer;
-            opacity: 0;
-            transition: opacity 0.2s;
-            z-index: 6;
             display: flex;
             align-items: center;
             justify-content: center;
-            line-height: 1;
         }
-        .channel-card:hover .card-delete {
-            opacity: 1;
+        .card-btn.edit-btn:hover {
+            background: #2563eb;
         }
-        .card-delete:hover {
+        .card-btn.del-btn:hover {
             background: #ef4444;
-            color: #fff;
         }
         .no-results {
             grid-column: 1 / -1;
             text-align: center;
             padding: 40px;
-            color: #475569;
+            color: #64748b;
             font-size: 15px;
         }
 
+        /* ── ADD SECTION ───────────────── */
         .add-section {
             background: var(--surface);
             border-radius: 16px;
-            padding: 18px 20px;
+            padding: 14px 18px;
             border: 1.5px dashed #1e3a50;
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 8px;
             align-items: center;
         }
         .add-section .add-title {
             font-weight: 700;
-            font-size: 14px;
-            color: #cbd5e1;
+            font-size: 13px;
+            color: var(--text2);
             white-space: nowrap;
             flex-shrink: 0;
         }
         .add-form {
             display: flex;
             flex-wrap: wrap;
-            gap: 8px;
+            gap: 6px;
             flex: 1 1 auto;
             align-items: center;
         }
-        .add-form input {
-            flex: 1 1 160px;
-            min-width: 130px;
-            padding: 9px 12px;
+        .add-form input,
+        .add-form select {
+            padding: 8px 12px;
             border-radius: 8px;
             border: 1.5px solid var(--border);
             background: #0f172a;
@@ -499,28 +631,22 @@
             font-size: 12px;
             outline: none;
             transition: var(--transition);
+            flex: 1 1 130px;
+            min-width: 110px;
         }
-        .add-form input:focus {
+        body.light .add-form input,
+        body.light .add-form select {
+            background: #f1f5f9;
+            color: #0f172a;
+            border-color: #cbd5e1;
+        }
+        .add-form input:focus,
+        .add-form select:focus {
             border-color: var(--accent);
             box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.08);
         }
-        .add-form select {
-            padding: 9px 12px;
-            border-radius: 8px;
-            border: 1.5px solid var(--border);
-            background: #0f172a;
-            color: #fff;
-            font-size: 12px;
-            outline: none;
-            cursor: pointer;
-            flex-shrink: 0;
-            transition: var(--transition);
-        }
-        .add-form select:focus {
-            border-color: var(--accent);
-        }
         .add-form button {
-            padding: 9px 18px;
+            padding: 8px 16px;
             border-radius: 8px;
             border: none;
             background: linear-gradient(135deg, #38bdf8, #2d9fd6);
@@ -531,17 +657,79 @@
             transition: var(--transition);
             white-space: nowrap;
             flex-shrink: 0;
-            letter-spacing: 0.3px;
         }
         .add-form button:hover {
             background: linear-gradient(135deg, #0ea5e9, #1e8ab5);
             box-shadow: 0 6px 18px rgba(56, 189, 248, 0.3);
             transform: translateY(-1px);
         }
+
+        /* ── MODAL ────────────────────── */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s;
+        }
+        .modal-overlay.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-content {
+            background: var(--surface);
+            border-radius: 16px;
+            padding: 20px;
+            width: 90%;
+            max-width: 420px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+        }
+        .modal-content h3 {
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        .modal-content input,
+        .modal-content select {
+            width: 100%;
+            padding: 9px 12px;
+            border-radius: 8px;
+            border: 1.5px solid var(--border);
+            background: #0f172a;
+            color: #fff;
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
+        .modal-actions button {
+            padding: 8px 18px;
+            border-radius: 8px;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: #000;
+        }
+        .btn-secondary {
+            background: var(--surface2);
+            color: var(--text);
+        }
+
+        /* Toast */
         .toast {
             position: fixed;
-            bottom: 24px;
-            right: 24px;
+            bottom: 20px;
+            right: 20px;
             background: #1a2332;
             color: #e2e8f0;
             padding: 12px 20px;
@@ -564,69 +752,19 @@
             border-color: #f43f5e;
             color: #fca5a5;
         }
-
-        @media (max-width: 768px) {
-            .channel-grid {
-                grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
-                gap: 8px;
-            }
-            .card-info {
-                padding: 7px 8px;
-            }
-            .card-info .cname {
-                font-size: 11px;
-            }
-            .tab-btn {
-                padding: 7px 12px;
-                font-size: 11px;
-            }
+        @media (max-width: 500px) {
             .header {
                 gap: 8px;
             }
-            .logo h1 {
-                font-size: 17px;
-            }
-            .add-form {
-                flex-direction: column;
-                width: 100%;
-            }
-            .add-form input,
-            .add-form select,
-            .add-form button {
-                width: 100%;
-                flex: 1 1 auto;
-            }
-            .card-thumb .placeholder-thumb {
-                font-size: 28px;
-            }
-            .channel-card.active::after {
-                font-size: 8px;
-                padding: 2px 5px;
-                top: 4px;
-                left: 4px;
-            }
-        }
-        @media (max-width: 420px) {
-            .channel-grid {
-                grid-template-columns: repeat(2, 1fr);
-                gap: 6px;
-            }
-            .card-info .cname {
-                font-size: 10px;
-            }
-            .tabs-container {
-                gap: 4px;
-            }
-            .tab-btn {
-                padding: 6px 10px;
-                font-size: 10px;
-                border-radius: 18px;
+            .now-playing-badge {
+                display: none;
             }
         }
     </style>
 </head>
 <body>
     <div class="app">
+        <!-- HEADER -->
         <div class="header">
             <div class="logo">
                 <div class="icon-circle">📡</div>
@@ -634,106 +772,148 @@
             </div>
             <div class="search-wrap">
                 <span class="search-icon">🔍</span>
-                <input type="text" id="searchInput" placeholder="Search channels by name or URL..." autocomplete="off" />
+                <input type="text" id="searchInput" placeholder="Search channels..." autocomplete="off" />
             </div>
             <div class="now-playing-badge">
-                <span class="live-dot"></span> Playing: <strong id="currentChannelLabel">-</strong>
+                <span class="live-dot"></span> <strong id="currentChannelLabel">-</strong>
+            </div>
+            <div class="header-actions">
+                <button class="icon-btn" id="shuffleBtn" title="Play random stream">🎲 Shuffle</button>
+                <button class="icon-btn" id="exportBtn" title="Export channels">💾 Export</button>
+                <button class="icon-btn" id="importBtn" title="Import channels">📂 Import</button>
+                <button class="theme-toggle" id="themeToggle" title="Toggle light/dark">🌓</button>
             </div>
         </div>
 
+        <!-- PLAYER -->
         <div class="player-wrapper">
             <div id="playerContainer">
-                <div class="player-overlay-empty" id="playerOverlay">
-                    <span class="big-icon">📺</span>
-                </div>
-                <div class="fallback-text" id="fallbackText">Select a channel below to start streaming</div>
+                <div class="player-overlay-empty" id="playerOverlay"><span class="big-icon">📺</span></div>
+                <div class="fallback-text" id="fallbackText">Select a channel to start</div>
             </div>
-            <div class="diagnostic-bar" id="diagnosticBar" title="Click for troubleshooting tips">
-                <span class="diag-icon">⚠️</span> Video not loading? Click here for tips
-                <span style="margin-left:auto;font-size:10px;">▼</span>
+            <button class="pip-btn" id="pipButton" title="Picture-in-Picture">📌 PiP</button>
+            <div class="diagnostic-bar" id="diagnosticBar">
+                <span class="diag-icon">⚠️</span> Video not loading? Click for tips <span style="margin-left:auto;">▼</span>
             </div>
             <div class="diagnostic-detail" id="diagnosticDetail">
                 <strong>Troubleshooting:</strong><br>
-                1. Turn off your browser's Ad-blocker or tracking shield for this page.<br>
-                2. Make sure you aren't opening this file straight from your desktop (use a local web server like Live Server).<br>
-                3. <strong style="color:#fca5a5;">Facebook videos:</strong> You must be logged into Facebook in another tab. The video also must be <u>public</u> and have embedding enabled by the page owner. Many Facebook pages disable embeds.<br>
-                4. If a YouTube stream shows "unavailable," the video may be region-locked or private.<br>
-                5. M3U8 streams need HLS.js support (loaded automatically).
+                1. Turn off ad‑blockers / shields for this page.<br>
+                2. Use a local web server (not file:// directly).<br>
+                3. <strong style="color:#fca5a5;">Facebook:</strong> Must be logged into Facebook. Video must be public and embeddable.<br>
+                4. M3U8 streams need HLS.js (auto‑loaded).
             </div>
         </div>
 
-        <div class="tabs-container" id="tabsContainer">
-            <button class="tab-btn active" data-cat="all">🌐 All <span class="tab-count" id="countAll">0</span></button>
-            <button class="tab-btn" data-cat="youtube">▶️ YouTube <span class="tab-count" id="countYt">0</span></button>
-            <button class="tab-btn" data-cat="facebook">📱 Facebook <span class="tab-count" id="countFb">0</span></button>
-            <button class="tab-btn" data-cat="web">🌊 Web <span class="tab-count" id="countWeb">0</span></button>
-            <button class="tab-btn" data-cat="tv">📺 TV <span class="tab-count" id="countTv">0</span></button>
+        <!-- TABS & SORT -->
+        <div class="controls-row">
+            <div class="tabs-container" id="tabsContainer">
+                <button class="tab-btn active" data-cat="all">🌐 All <span class="tab-count" id="countAll">0</span></button>
+                <button class="tab-btn" data-cat="youtube">▶️ YouTube <span class="tab-count" id="countYt">0</span></button>
+                <button class="tab-btn" data-cat="facebook">📱 Facebook <span class="tab-count" id="countFb">0</span></button>
+                <button class="tab-btn" data-cat="web">🌊 Web <span class="tab-count" id="countWeb">0</span></button>
+                <button class="tab-btn" data-cat="tv">📺 TV <span class="tab-count" id="countTv">0</span></button>
+            </div>
+            <div class="sort-shuffle">
+                <select id="sortSelect" class="icon-btn" style="padding:6px 10px; font-size:12px;">
+                    <option value="default">🕒 Default</option>
+                    <option value="name">🔤 A‑Z</option>
+                    <option value="category">📂 Category</option>
+                </select>
+            </div>
         </div>
 
+        <!-- CHANNEL GRID -->
         <div class="channel-grid" id="channelGrid"></div>
 
+        <!-- ADD SECTION -->
         <div class="add-section">
             <span class="add-title">➕ Add Stream</span>
             <div class="add-form">
-                <input type="text" id="channelNameInput" placeholder="Stream title (e.g., Lofi Beats)" />
-                <input type="text" id="channelUrlInput" placeholder="Paste YouTube, Facebook, or m3u8 URL..." />
+                <input type="text" id="channelNameInput" placeholder="Title" />
+                <input type="text" id="channelUrlInput" placeholder="Paste URL..." />
                 <select id="channelCategorySelect">
-                    <option value="auto">🤖 Auto-detect</option>
-                    <option value="youtube">▶️ YouTube</option>
-                    <option value="facebook">📱 Facebook</option>
+                    <option value="auto">🤖 Auto</option>
+                    <option value="youtube">▶️ YT</option>
+                    <option value="facebook">📱 FB</option>
                     <option value="web">🌊 Web</option>
                     <option value="tv">📺 TV</option>
                 </select>
-                <button id="addChannelBtn">🚀 Load Stream</button>
+                <button id="addChannelBtn">🚀 Load</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- EDIT MODAL -->
+    <div class="modal-overlay" id="editModal">
+        <div class="modal-content">
+            <h3>✏️ Edit Channel</h3>
+            <input type="text" id="editName" placeholder="Channel name" />
+            <input type="text" id="editUrl" placeholder="Stream URL" />
+            <select id="editCategory">
+                <option value="youtube">YouTube</option>
+                <option value="facebook">Facebook</option>
+                <option value="web">Web</option>
+                <option value="tv">TV</option>
+            </select>
+            <div class="modal-actions">
+                <button class="btn-secondary" id="cancelEdit">Cancel</button>
+                <button class="btn-primary" id="saveEdit">Save</button>
             </div>
         </div>
     </div>
 
     <div class="toast" id="toast"></div>
 
+    <!-- Hidden file input for import -->
+    <input type="file" id="importFileInput" accept=".json" style="display:none">
+
     <script>
-        (function() {
-            // ── DEFAULT CHANNELS ──────────────────────────────
-            // Using the same Facebook URL from the working reference code (PlayStation public video)
+        (() => {
+            // ──────────────────────────────────────
+            // FIREBASE CONFIG – replace with yours for real‑time sync
+            // If you don't replace, the app works with localStorage only (no cross‑device sync).
+            // Get your config from Firebase Console → Project settings → Web app.
+            const firebaseConfig = {
+                apiKey: "YOUR_API_KEY",
+                authDomain: "YOUR_PROJECT.firebaseapp.com",
+                databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+                projectId: "YOUR_PROJECT_ID",
+                storageBucket: "YOUR_PROJECT.appspot.com",
+                messagingSenderId: "123456789",
+                appId: "1:123456789:web:abc123"
+            };
+            const useFirebase = firebaseConfig.apiKey !== "YOUR_API_KEY";
+            let firebaseRef = null;
+
+            // ── DEFAULT CHANNELS ──────────────────
             const defaultChannels = [
-                { name: 'Space Station Live', url: 'https://www.youtube.com/watch?v=21X5lGlDOfg',
+                { name: 'NASA Space Station Live', url: 'https://www.youtube.com/watch?v=21X5lGlDOfg',
                     category: 'youtube', emoji: '🚀' },
-                { name: 'Lofi Girl Beats 24/7', url: 'https://www.youtube.com/watch?v=jfKfPfyJRdk', category: 'youtube',
+                { name: 'Lofi Girl Beats', url: 'https://www.youtube.com/watch?v=jfKfPfyJRdk', category: 'youtube',
                     emoji: '🎧' },
                 { name: 'Aquarium Relaxation', url: 'https://www.youtube.com/watch?v=8r1CZpD4H6s', category: 'youtube',
                     emoji: '🐠' },
-                { name: 'Nature Wildlife Cam', url: 'https://www.youtube.com/watch?v=36YnV9STBqc', category: 'youtube',
-                    emoji: '🌿' },
-                { name: 'Chillhop Radio', url: 'https://www.youtube.com/watch?v=5qap5aO4i9A', category: 'youtube',
-                    emoji: '🎵' },
-                { name: 'Sky News Live', url: 'https://www.youtube.com/watch?v=9Auq9mYxFEE', category: 'tv', emoji: '📰' },
-                { name: 'Euronews Live', url: 'https://www.youtube.com/watch?v=MsZd6QrJeME', category: 'tv', emoji: '🌍' },
-                // Facebook – exact same working URL from the reference code
                 { name: 'Facebook: PlayStation', url: 'https://www.facebook.com/PlayStation/videos/10155554431506803/',
                     category: 'facebook', emoji: '🎮' },
-                { name: 'Facebook: Red Table Talk',
-                    url: 'https://www.facebook.com/redtabletalk/videos/693700561979212/', category: 'facebook',
-                    emoji: '🎙️' },
                 { name: 'Big Buck Bunny (Test)', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8',
                     category: 'web', emoji: '🐰' },
-                { name: 'Akamai Test Stream',
-                    url: 'https://cph-msl.akamaized.net/hls/live/2000341/test/master.m3u8', category: 'web',
-                emoji: '🔬' },
-                { name: 'BBC Earth (via YT)', url: 'https://www.youtube.com/watch?v=8v6NtC2oYDE', category: 'tv',
-                    emoji: '🌎' },
+                { name: 'Euronews Live', url: 'https://www.youtube.com/watch?v=MsZd6QrJeME', category: 'tv', emoji: '🌍' },
                 { name: 'Jazz Radio 24/7', url: 'https://www.youtube.com/watch?v=1Z7nXgT3K4E', category: 'youtube',
                     emoji: '🎷' },
             ];
 
-            // ── STATE ────────────────────────────────────────
+            // ── STATE ────────────────────────────
             let channels = [];
             let activeIndex = -1;
             let activeCategory = 'all';
             let searchQuery = '';
+            let sortMode = 'default';
             let hlsInstance = null;
             let currentPlayerElement = null;
+            let currentChannelFirebaseKey = null;
+            let editingChannelKey = null;
 
-            // ── DOM REFS ──────────────────────────────────────
+            // DOM
             const grid = document.getElementById('channelGrid');
             const container = document.getElementById('playerContainer');
             const currentLabel = document.getElementById('currentChannelLabel');
@@ -744,8 +924,15 @@
             const diagnosticBar = document.getElementById('diagnosticBar');
             const diagnosticDetail = document.getElementById('diagnosticDetail');
             const catSelect = document.getElementById('channelCategorySelect');
+            const pipButton = document.getElementById('pipButton');
+            const editModal = document.getElementById('editModal');
+            const editName = document.getElementById('editName');
+            const editUrl = document.getElementById('editUrl');
+            const editCategory = document.getElementById('editCategory');
+            const sortSelect = document.getElementById('sortSelect');
+            const importFileInput = document.getElementById('importFileInput');
 
-            // ── TOAST ─────────────────────────────────────────
+            // ── TOAST ────────────────────────────
             let toastTimer;
 
             function showToast(msg, isError = false) {
@@ -756,7 +943,7 @@
                 toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2800);
             }
 
-            // ── URL PARSING (follows reference code exactly) ──
+            // ── URL PARSING (Facebook embed follows reference code) ──
             function extractYoutubeId(url) {
                 const regex =
                     /(?:youtube(?:-nocookie)?\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
@@ -766,119 +953,92 @@
 
             function getYoutubeThumbnail(url) {
                 const vidId = extractYoutubeId(url);
-                if (vidId) {
-                    return {
-                        videoId: vidId,
-                        thumbnail: `https://img.youtube.com/vi/${vidId}/hqdefault.jpg`,
-                        embedUrl: `https://www.youtube-nocookie.com/embed/${vidId}?autoplay=1&mute=1&controls=1&playsinline=1&rel=0`,
-                    };
-                }
+                if (vidId) return {
+                    videoId: vidId,
+                    thumbnail: `https://img.youtube.com/vi/${vidId}/hqdefault.jpg`,
+                    embedUrl: `https://www.youtube-nocookie.com/embed/${vidId}?autoplay=1&mute=1&controls=1&playsinline=1&rel=0`
+                };
                 return null;
             }
 
-            /** Detect category — matches reference code logic */
             function detectCategory(url) {
                 const u = url.trim();
                 if (/\.m3u8(\?.*)?$/i.test(u) || /\/hls\//i.test(u)) return 'web';
-                // Facebook detection — same regex as reference
                 if (/facebook\.com|fb\.watch|fb\.com/i.test(u)) return 'facebook';
                 if (/youtube\.com|youtu\.be|youtube-nocookie\.com/i.test(u)) return 'youtube';
-                if (/\.(mpd|m3u|ts|stream|hls)/i.test(u)) return 'web';
                 return 'web';
             }
 
-            /**
-             * Build Facebook embed URL — follows the reference code pattern EXACTLY:
-             *   `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(url)}&show_text=0&autoplay=1&mute=1`
-             */
             function buildFacebookEmbedUrl(url) {
                 const u = url.trim();
-                // If already a plugins/video.php URL, return it as-is
-                if (u.includes('facebook.com/plugins/video.php')) {
-                    return u;
-                }
-                const cleanFbUrl = encodeURIComponent(u);
-                return `https://www.facebook.com/plugins/video.php?href=${cleanFbUrl}&show_text=0&autoplay=1&mute=1`;
+                if (u.includes('facebook.com/plugins/video.php')) return u;
+                return `https://www.facebook.com/plugins/video.php?href=${encodeURIComponent(u)}&show_text=0&autoplay=1&mute=1`;
             }
 
-            /** Build the final playback URL for the player */
             function parseUrlForPlayback(url, category) {
-                const u = url.trim();
-                if (category === 'facebook') {
-                    return buildFacebookEmbedUrl(u);
-                }
+                if (category === 'facebook') return buildFacebookEmbedUrl(url);
                 if (category === 'youtube') {
-                    const ytInfo = getYoutubeThumbnail(u);
-                    if (ytInfo) return ytInfo.embedUrl;
-                    return u;
+                    const yt = getYoutubeThumbnail(url);
+                    return yt ? yt.embedUrl : url;
                 }
-                return u;
+                return url;
             }
 
             function enrichChannel(raw) {
                 const category = raw.category || detectCategory(raw.url);
                 const ytInfo = (category === 'youtube') ? getYoutubeThumbnail(raw.url) : null;
                 return {
-                    name: raw.name || 'Untitled Stream',
+                    name: raw.name || 'Untitled',
                     url: raw.url,
                     originalUrl: raw.originalUrl || raw.url,
-                    category: category,
+                    category,
                     emoji: raw.emoji || getDefaultEmoji(category),
                     thumbnail: ytInfo ? ytInfo.thumbnail : null,
                     videoId: ytInfo ? ytInfo.videoId : null,
                     playbackUrl: parseUrlForPlayback(raw.url, category),
+                    firebaseKey: raw.firebaseKey || null
                 };
             }
 
-            function getDefaultEmoji(category) {
-                const map = { youtube: '▶️', facebook: '📱', web: '🌊', tv: '📺' };
-                return map[category] || '📡';
+            function getDefaultEmoji(cat) {
+                const m = { youtube: '▶️', facebook: '📱', web: '🌊', tv: '📺' };
+                return m[cat] || '📡';
             }
 
-            // ── PLAYER LOGIC (follows reference code structure) ──
-            function destroyCurrentPlayer() {
+            // ── PLAYER ────────────────────────────
+            function destroyPlayer() {
                 if (hlsInstance) { hlsInstance.destroy();
                     hlsInstance = null; }
                 if (currentPlayerElement) { currentPlayerElement.remove();
                     currentPlayerElement = null; }
+                pipButton.classList.remove('active');
             }
 
             function playChannel(index) {
-                destroyCurrentPlayer();
+                destroyPlayer();
                 fallbackText.style.display = 'none';
-                if (playerOverlay) playerOverlay.style.display = 'none';
-
+                playerOverlay.style.display = 'none';
                 if (index < 0 || index >= channels.length) {
                     currentLabel.textContent = '-';
                     fallbackText.style.display = '';
-                    if (playerOverlay) playerOverlay.style.display = '';
+                    playerOverlay.style.display = '';
                     return;
                 }
-
-                const channel = channels[index];
-                currentLabel.textContent = channel.name;
+                const ch = channels[index];
+                currentLabel.textContent = ch.name;
                 activeIndex = index;
                 localStorage.setItem('stream_station_idx', activeIndex);
-
-                const playbackUrl = channel.playbackUrl || parseUrlForPlayback(channel.url, channel.category);
-                const category = channel.category;
-
-                // YouTube + Facebook → iframe (exactly as reference code does)
-                if (category === 'youtube' || category === 'facebook') {
+                const playback = ch.playbackUrl;
+                if (ch.category === 'youtube' || ch.category === 'facebook') {
                     const iframe = document.createElement('iframe');
-                    iframe.src = playbackUrl;
-                    // Same attributes as reference code
-                    iframe.setAttribute('allow',
-                        'autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; fullscreen');
-                    iframe.setAttribute('allowfullscreen', 'true');
-                    iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
-                    iframe.setAttribute('frameborder', '0');
-                    iframe.setAttribute('scrolling', 'no');
+                    iframe.src = playback;
+                    iframe.allow = 'autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; fullscreen';
+                    iframe.allowFullscreen = true;
+                    iframe.referrerPolicy = 'no-referrer-when-downgrade';
                     iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border:0;';
                     container.appendChild(iframe);
                     currentPlayerElement = iframe;
                 } else {
-                    // Web / TV → video element (HLS or direct)
                     const video = document.createElement('video');
                     video.controls = true;
                     video.autoplay = true;
@@ -887,61 +1047,56 @@
                     video.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;';
                     container.appendChild(video);
                     currentPlayerElement = video;
-
-                    if (playbackUrl.includes('.m3u8') && Hls.isSupported()) {
+                    if (playback.includes('.m3u8') && Hls.isSupported()) {
                         hlsInstance = new Hls({ enableWorker: true, lowLatencyMode: false });
-                        hlsInstance.loadSource(playbackUrl);
+                        hlsInstance.loadSource(playback);
                         hlsInstance.attachMedia(video);
-                        hlsInstance.on(Hls.Events.ERROR, function(event, data) {
-                            if (data.fatal) showToast('⚠️ Stream error — the M3U8 source may be offline.', true);
-                        });
                     } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                        video.src = playbackUrl;
-                    } else if (!playbackUrl.includes('.m3u8')) {
-                        video.src = playbackUrl;
+                        video.src = playback;
+                    } else if (!playback.includes('.m3u8')) {
+                        video.src = playback;
+                    }
+                    if (document.pictureInPictureEnabled) {
+                        pipButton.classList.add('active');
+                        pipButton.onclick = () => video.requestPictureInPicture().catch(() => {});
                     }
                 }
-                updateActiveCardInGrid();
+                updateActiveCard();
             }
 
-            function updateActiveCardInGrid() {
-                document.querySelectorAll('.channel-card').forEach(card => {
-                    const idx = parseInt(card.dataset.index);
-                    card.classList.toggle('active', idx === activeIndex);
+            function updateActiveCard() {
+                document.querySelectorAll('.channel-card').forEach(c => {
+                    const idx = parseInt(c.dataset.index);
+                    c.classList.toggle('active', idx === activeIndex);
                 });
             }
 
-            // ── RENDER GRID ────────────────────────────────────
-            function getFilteredChannels() {
+            // ── RENDER GRID ──────────────────────
+            function getFilteredAndSorted() {
                 let filtered = [...channels];
-                if (activeCategory !== 'all') {
-                    filtered = filtered.filter(ch => ch.category === activeCategory);
-                }
+                if (activeCategory !== 'all') filtered = filtered.filter(c => c.category === activeCategory);
                 if (searchQuery.trim()) {
                     const q = searchQuery.trim().toLowerCase();
-                    filtered = filtered.filter(ch =>
-                        ch.name.toLowerCase().includes(q) ||
-                        ch.url.toLowerCase().includes(q) ||
-                        (ch.originalUrl && ch.originalUrl.toLowerCase().includes(q))
-                    );
+                    filtered = filtered.filter(c => c.name.toLowerCase().includes(q) || c.url.toLowerCase().includes(
+                        q));
                 }
+                if (sortMode === 'name') filtered.sort((a, b) => a.name.localeCompare(b.name));
+                else if (sortMode === 'category') filtered.sort((a, b) => a.category.localeCompare(b.category));
                 return filtered;
             }
 
             function renderGrid() {
-                const filtered = getFilteredChannels();
+                const filtered = getFilteredAndSorted();
                 grid.innerHTML = '';
-                if (filtered.length === 0) {
-                    grid.innerHTML =
-                        '<div class="no-results">📭 No channels found. Try a different search or add a new stream below.</div>';
+                if (!filtered.length) {
+                    grid.innerHTML = '<div class="no-results">📭 No channels found</div>';
                 } else {
                     filtered.forEach(ch => {
-                        const globalIndex = channels.indexOf(ch);
+                        const idx = channels.indexOf(ch);
                         const card = document.createElement('div');
                         card.className = 'channel-card';
-                        if (globalIndex === activeIndex) card.classList.add('active');
-                        card.dataset.index = globalIndex;
-
+                        if (idx === activeIndex) card.classList.add('active');
+                        card.dataset.index = idx;
                         let thumbHTML = '';
                         if (ch.thumbnail) {
                             thumbHTML =
@@ -949,64 +1104,44 @@
                             thumbHTML +=
                                 `<div class="placeholder-thumb ${ch.category}-bg" style="display:none;">${ch.emoji}</div>`;
                         } else {
-                            thumbHTML =
-                                `<div class="placeholder-thumb ${ch.category}-bg">${ch.emoji}</div>`;
+                            thumbHTML = `<div class="placeholder-thumb ${ch.category}-bg">${ch.emoji}</div>`;
                         }
                         thumbHTML += `<div class="play-overlay">▶️</div>`;
-
                         card.innerHTML = `
                             <div class="card-thumb">${thumbHTML}</div>
                             <div class="card-info">
                                 <span class="cname" title="${ch.name}">${ch.name}</span>
-                                <div class="cmeta">
-                                    <span class="ctype-badge ${ch.category}">${ch.category}</span>
-                                </div>
+                                <div class="cmeta"><span class="ctype-badge ${ch.category}">${ch.category}</span></div>
                             </div>
-                            <button class="card-delete" title="Remove channel" data-index="${globalIndex}">✕</button>
+                            <div class="card-actions">
+                                <button class="card-btn edit-btn" data-idx="${idx}">✎</button>
+                                <button class="card-btn del-btn" data-idx="${idx}">✕</button>
+                            </div>
                         `;
-
                         card.addEventListener('click', (e) => {
-                            if (e.target.closest('.card-delete')) return;
-                            activeIndex = globalIndex;
+                            if (e.target.closest('.card-actions')) return;
+                            activeIndex = idx;
                             renderGrid();
                             playChannel(activeIndex);
                             localStorage.setItem('stream_station_idx', activeIndex);
                         });
-
-                        card.querySelector('.card-delete').addEventListener('click', (e) => {
+                        card.querySelector('.del-btn').addEventListener('click', (e) => {
                             e.stopPropagation();
-                            e.preventDefault();
-                            removeChannel(globalIndex);
+                            removeChannel(idx);
                         });
-
+                        card.querySelector('.edit-btn').addEventListener('click', (e) => {
+                            e.stopPropagation();
+                            openEditModal(idx);
+                        });
                         grid.appendChild(card);
                     });
                 }
-                updateCategoryCounts();
+                updateTabCounts();
             }
 
-            function removeChannel(index) {
-                if (index < 0 || index >= channels.length) return;
-                const name = channels[index].name;
-                channels.splice(index, 1);
-                if (activeIndex >= channels.length) activeIndex = channels.length - 1;
-                if (activeIndex < 0) activeIndex = -1;
-                saveChannels();
-                renderGrid();
-                if (activeIndex >= 0) {
-                    playChannel(activeIndex);
-                } else {
-                    destroyCurrentPlayer();
-                    fallbackText.style.display = '';
-                    if (playerOverlay) playerOverlay.style.display = '';
-                    currentLabel.textContent = '-';
-                }
-                showToast(`🗑️ Removed "${name}"`);
-            }
-
-            function updateCategoryCounts() {
+            function updateTabCounts() {
                 const counts = { all: channels.length, youtube: 0, facebook: 0, web: 0, tv: 0 };
-                channels.forEach(ch => { if (counts[ch.category] !== undefined) counts[ch.category]++; });
+                channels.forEach(c => { if (counts[c.category] !== undefined) counts[c.category]++; });
                 document.getElementById('countAll').textContent = counts.all;
                 document.getElementById('countYt').textContent = counts.youtube;
                 document.getElementById('countFb').textContent = counts.facebook;
@@ -1014,60 +1149,205 @@
                 document.getElementById('countTv').textContent = counts.tv;
             }
 
-            // ── PERSISTENCE ────────────────────────────────────
-            function saveChannels() {
-                const toSave = channels.map(ch => ({
-                    name: ch.name,
-                    url: ch.url,
-                    originalUrl: ch.originalUrl || ch.url,
-                    category: ch.category,
-                    emoji: ch.emoji,
-                    thumbnail: ch.thumbnail,
-                    videoId: ch.videoId,
-                    playbackUrl: ch.playbackUrl,
+            // ── ADD / REMOVE / EDIT ──────────────
+            function addChannelLocally(channelData) {
+                const enriched = enrichChannel(channelData);
+                channels.push(enriched);
+                if (useFirebase && firebaseRef) {
+                    const newRef = firebaseRef.push();
+                    enriched.firebaseKey = newRef.key;
+                    newRef.set({
+                        name: enriched.name,
+                        url: enriched.url,
+                        originalUrl: enriched.originalUrl,
+                        category: enriched.category,
+                        emoji: enriched.emoji,
+                        thumbnail: enriched.thumbnail,
+                        videoId: enriched.videoId,
+                        playbackUrl: enriched.playbackUrl
+                    });
+                }
+                activeIndex = channels.length - 1;
+                saveLocal();
+                renderGrid();
+                playChannel(activeIndex);
+                if (enriched.category === 'facebook') showToast('✅ Added! Facebook videos require login.');
+                else showToast(`✅ Added "${enriched.name}"`);
+            }
+
+            function removeChannel(index, fromFirebase = true) {
+                if (index < 0 || index >= channels.length) return;
+                const ch = channels[index];
+                if (useFirebase && fromFirebase && ch.firebaseKey && firebaseRef) {
+                    firebaseRef.child(ch.firebaseKey).remove();
+                }
+                channels.splice(index, 1);
+                if (activeIndex >= channels.length) activeIndex = channels.length - 1;
+                if (activeIndex < 0) activeIndex = -1;
+                saveLocal();
+                renderGrid();
+                if (activeIndex >= 0) playChannel(activeIndex);
+                else { destroyPlayer();
+                    fallbackText.style.display = '';
+                    playerOverlay.style.display = '';
+                    currentLabel.textContent = '-'; }
+                showToast(`🗑️ Removed "${ch.name}"`);
+            }
+
+            function openEditModal(index) {
+                const ch = channels[index];
+                editingChannelKey = ch.firebaseKey || index;
+                editName.value = ch.name;
+                editUrl.value = ch.url;
+                editCategory.value = ch.category;
+                editModal.classList.add('open');
+            }
+
+            function saveEdit() {
+                const idx = channels.findIndex(c => (c.firebaseKey && c.firebaseKey === editingChannelKey) || c ===
+                    editingChannelKey);
+                if (idx < 0) return;
+                const ch = channels[idx];
+                ch.name = editName.value.trim() || ch.name;
+                ch.url = editUrl.value.trim() || ch.url;
+                ch.category = editCategory.value;
+                ch.emoji = getDefaultEmoji(ch.category);
+                const ytInfo = (ch.category === 'youtube') ? getYoutubeThumbnail(ch.url) : null;
+                ch.thumbnail = ytInfo ? ytInfo.thumbnail : null;
+                ch.videoId = ytInfo ? ytInfo.videoId : null;
+                ch.playbackUrl = parseUrlForPlayback(ch.url, ch.category);
+                if (useFirebase && ch.firebaseKey && firebaseRef) {
+                    firebaseRef.child(ch.firebaseKey).update({
+                        name: ch.name,
+                        url: ch.url,
+                        category: ch.category,
+                        thumbnail: ch.thumbnail,
+                        playbackUrl: ch.playbackUrl
+                    });
+                }
+                saveLocal();
+                editModal.classList.remove('open');
+                renderGrid();
+                if (idx === activeIndex) playChannel(activeIndex);
+                showToast('✅ Channel updated');
+            }
+
+            // ── LOCAL STORAGE FALLBACK ───────────
+            function saveLocal() {
+                const toSave = channels.map(c => ({
+                    name: c.name,
+                    url: c.url,
+                    originalUrl: c.originalUrl,
+                    category: c.category,
+                    emoji: c.emoji,
+                    thumbnail: c.thumbnail,
+                    videoId: c.videoId,
+                    playbackUrl: c.playbackUrl,
+                    firebaseKey: c.firebaseKey
                 }));
-                localStorage.setItem('stream_station_chans_v3', JSON.stringify(toSave));
+                localStorage.setItem('stream_station_chans_v4', JSON.stringify(toSave));
                 localStorage.setItem('stream_station_idx', activeIndex);
             }
 
-            function loadChannels() {
-                const saved = localStorage.getItem('stream_station_chans_v3');
-                const savedIdx = parseInt(localStorage.getItem('stream_station_idx')) || 0;
+            function loadLocal() {
+                const saved = localStorage.getItem('stream_station_chans_v4');
                 if (saved) {
                     try {
                         const parsed = JSON.parse(saved);
                         channels = parsed.map(raw => enrichChannel(raw));
-                        activeIndex = Math.min(savedIdx, channels.length - 1);
-                        if (activeIndex < 0) activeIndex = channels.length > 0 ? 0 : -1;
-                        return;
+                        activeIndex = parseInt(localStorage.getItem('stream_station_idx')) || 0;
+                        if (activeIndex >= channels.length) activeIndex = channels.length > 0 ? 0 : -1;
+                        return true;
                     } catch (e) {}
                 }
-                // Fallback: try legacy key
-                const legacy = localStorage.getItem('stream_station_chans_v2') || localStorage.getItem(
-                    'stream_station_chans');
-                if (legacy) {
-                    try {
-                        const parsed = JSON.parse(legacy);
-                        channels = parsed.map(raw => enrichChannel(raw));
-                        activeIndex = Math.min(savedIdx, channels.length - 1);
-                        if (activeIndex < 0) activeIndex = channels.length > 0 ? 0 : -1;
-                        saveChannels();
-                        return;
-                    } catch (e) {}
-                }
-                channels = defaultChannels.map(raw => enrichChannel(raw));
-                activeIndex = channels.length > 0 ? 0 : -1;
-                saveChannels();
+                return false;
             }
 
-            // ── TABS ───────────────────────────────────────────
-            function setupTabs() {
-                const tabs = document.querySelectorAll('.tab-btn');
-                tabs.forEach(tab => {
-                    tab.addEventListener('click', () => {
-                        tabs.forEach(t => t.classList.remove('active'));
-                        tab.classList.add('active');
-                        activeCategory = tab.dataset.cat;
+            // ── FIREBASE REAL‑TIME SYNC ──────────
+            function initFirebase() {
+                if (!useFirebase) return;
+                try {
+                    firebase.initializeApp(firebaseConfig);
+                    firebaseRef = firebase.database().ref('channels');
+                    // Listen for additions
+                    firebaseRef.on('child_added', snap => {
+                        const data = snap.val();
+                        if (!data || channels.some(c => c.firebaseKey === snap.key)) return;
+                        const enriched = enrichChannel({ ...data, firebaseKey: snap.key });
+                        channels.push(enriched);
+                        renderGrid();
+                        if (channels.length === 1) { activeIndex = 0;
+                            playChannel(0); }
+                    });
+                    firebaseRef.on('child_removed', snap => {
+                        const idx = channels.findIndex(c => c.firebaseKey === snap.key);
+                        if (idx >= 0) removeChannel(idx, false);
+                    });
+                    firebaseRef.on('child_changed', snap => {
+                        const idx = channels.findIndex(c => c.firebaseKey === snap.key);
+                        if (idx >= 0) {
+                            const data = snap.val();
+                            Object.assign(channels[idx], enrichChannel({ ...data, firebaseKey: snap.key }));
+                            renderGrid();
+                            if (idx === activeIndex) playChannel(activeIndex);
+                        }
+                    });
+                    showToast('🌐 Synced with cloud – everyone sees the same channels!');
+                } catch (e) {
+                    console.warn('Firebase init failed, using localStorage', e);
+                }
+            }
+
+            // ── EXPORT / IMPORT ──────────────────
+            function exportChannels() {
+                const data = JSON.stringify(channels.map(c => ({
+                    name: c.name,
+                    url: c.url,
+                    category: c.category
+                })), null, 2);
+                const blob = new Blob([data], { type: 'application/json' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'streamstation_backup.json';
+                a.click();
+                showToast('💾 Channels exported');
+            }
+
+            function importChannels(file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const arr = JSON.parse(e.target.result);
+                        if (!Array.isArray(arr)) throw new Error('Invalid format');
+                        arr.forEach(item => addChannelLocally(item));
+                        showToast('📂 Import successful');
+                    } catch (err) {
+                        showToast('❌ Invalid JSON file', true);
+                    }
+                };
+                reader.readAsText(file);
+            }
+
+            // ── THEME TOGGLE ─────────────────────
+            function initTheme() {
+                const saved = localStorage.getItem('stream_station_theme');
+                if (saved === 'light') document.body.classList.add('light');
+                document.getElementById('themeToggle').addEventListener('click', () => {
+                    document.body.classList.toggle('light');
+                    localStorage.setItem('stream_station_theme', document.body.classList.contains('light') ?
+                        'light' : 'dark');
+                });
+            }
+
+            // ── EVENT LISTENERS ──────────────────
+            function setupUI() {
+                // Tabs
+                document.querySelectorAll('.tab-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove(
+                            'active'));
+                        btn.classList.add('active');
+                        activeCategory = btn.dataset.cat;
                         localStorage.setItem('stream_station_cat', activeCategory);
                         renderGrid();
                     });
@@ -1075,135 +1355,97 @@
                 const savedCat = localStorage.getItem('stream_station_cat');
                 if (savedCat && ['all', 'youtube', 'facebook', 'web', 'tv'].includes(savedCat)) {
                     activeCategory = savedCat;
-                    tabs.forEach(t => t.classList.toggle('active', t.dataset.cat === activeCategory));
-                }
-            }
-
-            // ── AUTO-DETECT ────────────────────────────────────
-            function setupAutoDetect() {
-                const urlInput = document.getElementById('channelUrlInput');
-                urlInput.addEventListener('input', () => {
-                    if (catSelect.value === 'auto' || catSelect.dataset.autoSet === 'true') {
-                        const detected = detectCategory(urlInput.value);
-                        catSelect.value = detected;
-                        catSelect.dataset.autoSet = 'true';
-                    }
-                });
-                catSelect.addEventListener('change', () => {
-                    catSelect.dataset.autoSet = (catSelect.value === 'auto') ? 'true' : 'false';
-                    if (catSelect.value === 'auto') {
-                        const detected = detectCategory(urlInput.value);
-                        catSelect.value = detected;
-                    }
-                });
-            }
-
-            // ── ADD CHANNEL ────────────────────────────────────
-            function setupAddButton() {
-                document.getElementById('addChannelBtn').addEventListener('click', () => {
-                    const nameInp = document.getElementById('channelNameInput');
-                    const urlInp = document.getElementById('channelUrlInput');
-                    const catVal = catSelect.value;
-                    if (!nameInp.value.trim() || !urlInp.value.trim()) {
-                        showToast('⚠️ Please fill out both the title and stream link.', true);
-                        return;
-                    }
-                    let category = (catVal === 'auto') ? detectCategory(urlInp.value) : catVal;
-                    const enriched = enrichChannel({
-                        name: nameInp.value.trim(),
-                        url: urlInp.value.trim(),
-                        originalUrl: urlInp.value.trim(),
-                        category: category,
-                        emoji: getDefaultEmoji(category),
-                    });
-                    channels.push(enriched);
-                    activeIndex = channels.length - 1;
-                    saveChannels();
-                    activeCategory = category;
-                    document.querySelectorAll('.tab-btn').forEach(t => t.classList.toggle('active', t.dataset
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset
                         .cat === activeCategory));
-                    localStorage.setItem('stream_station_cat', activeCategory);
-                    nameInp.value = '';
-                    urlInp.value = '';
-                    catSelect.value = 'auto';
-                    catSelect.dataset.autoSet = 'true';
-                    renderGrid();
-                    playChannel(activeIndex);
-                    if (category === 'facebook') {
-                        showToast(
-                            '✅ Added! Facebook videos require you to be logged into Facebook in another tab.'
-                            );
-                    } else {
-                        showToast(`✅ Added "${enriched.name}" to ${category} section!`);
-                    }
-                });
-            }
+                }
 
-            // ── SEARCH ─────────────────────────────────────────
-            function setupSearch() {
+                // Search
                 let debounce;
                 searchInput.addEventListener('input', () => {
                     clearTimeout(debounce);
-                    debounce = setTimeout(() => {
-                        searchQuery = searchInput.value;
-                        renderGrid();
-                    }, 200);
+                    debounce = setTimeout(() => { searchQuery = searchInput.value;
+                        renderGrid(); }, 200);
                 });
-                searchInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Escape') {
-                        searchInput.value = '';
+                searchInput.addEventListener('keydown', e => { if (e.key === 'Escape') { searchInput.value = '';
                         searchQuery = '';
                         renderGrid();
-                        searchInput.blur();
-                    }
-                });
-            }
+                        searchInput.blur(); } });
 
-            // ── DIAGNOSTIC TOGGLE ──────────────────────────────
-            function setupDiagnostic() {
-                diagnosticBar.addEventListener('click', () => {
-                    diagnosticDetail.classList.toggle('open');
-                    const arrow = diagnosticBar.querySelector('span:last-child');
-                    if (arrow) arrow.textContent = diagnosticDetail.classList.contains('open') ? '▲' : '▼';
-                });
-            }
+                // Sort
+                sortSelect.addEventListener('change', () => { sortMode = sortSelect.value;
+                    renderGrid(); });
 
-            // ── KEYBOARD SHORTCUTS ─────────────────────────────
-            function setupKeyboard() {
-                document.addEventListener('keydown', (e) => {
-                    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT' || e.target.tagName ===
-                        'TEXTAREA') return;
-                    if (e.key === 'f' || e.key === 'F') {
-                        e.preventDefault();
-                        searchInput.focus();
-                    }
-                });
-            }
+                // Diagnostic toggle
+                diagnosticBar.addEventListener('click', () => diagnosticDetail.classList.toggle('open'));
 
-            // ── INIT ───────────────────────────────────────────
-            function init() {
-                loadChannels();
-                setupTabs();
-                setupAutoDetect();
-                setupAddButton();
-                setupSearch();
-                setupDiagnostic();
-                setupKeyboard();
-                renderGrid();
-                if (activeIndex >= 0 && activeIndex < channels.length) {
+                // Add button
+                document.getElementById('addChannelBtn').addEventListener('click', () => {
+                    const name = document.getElementById('channelNameInput').value.trim();
+                    const url = document.getElementById('channelUrlInput').value.trim();
+                    if (!name || !url) return showToast('⚠️ Please fill both fields', true);
+                    let cat = catSelect.value;
+                    if (cat === 'auto') cat = detectCategory(url);
+                    addChannelLocally({ name, url, originalUrl: url, category: cat, emoji: getDefaultEmoji(
+                            cat) });
+                    document.getElementById('channelNameInput').value = '';
+                    document.getElementById('channelUrlInput').value = '';
+                    catSelect.value = 'auto';
+                    activeCategory = cat;
+                    document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset
+                        .cat === activeCategory));
+                });
+
+                // Shuffle
+                document.getElementById('shuffleBtn').addEventListener('click', () => {
+                    if (!channels.length) return;
+                    const randomIdx = Math.floor(Math.random() * channels.length);
+                    activeIndex = randomIdx;
+                    renderGrid();
                     playChannel(activeIndex);
-                } else if (channels.length > 0) {
-                    activeIndex = 0;
-                    playChannel(0);
-                } else {
-                    currentLabel.textContent = '-';
-                }
-                updateCategoryCounts();
-                console.log(
-                    `🚀 StreamStation Pro ready — ${channels.length} channels. Press "F" to search.`
-                );
+                    localStorage.setItem('stream_station_idx', activeIndex);
+                });
+
+                // Export / Import
+                document.getElementById('exportBtn').addEventListener('click', exportChannels);
+                document.getElementById('importBtn').addEventListener('click', () => importFileInput.click());
+                importFileInput.addEventListener('change', (e) => {
+                    if (e.target.files[0]) importChannels(e.target.files[0]);
+                    importFileInput.value = '';
+                });
+
+                // Edit modal
+                document.getElementById('cancelEdit').addEventListener('click', () => editModal.classList.remove(
+                    'open'));
+                document.getElementById('saveEdit').addEventListener('click', saveEdit);
+                window.addEventListener('click', (e) => { if (e.target === editModal) editModal.classList.remove(
+                        'open'); });
+
+                // Keyboard shortcut: F to search
+                document.addEventListener('keydown', (e) => {
+                    if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+                    if (e.key === 'f' || e.key === 'F') { e.preventDefault();
+                        searchInput.focus(); }
+                });
             }
 
+            // ── INIT ──────────────────────────────
+            function init() {
+                initTheme();
+                if (!loadLocal()) {
+                    channels = defaultChannels.map(raw => enrichChannel(raw));
+                    activeIndex = 0;
+                    saveLocal();
+                }
+                if (useFirebase) initFirebase();
+                else showToast('💻 Offline mode (localStorage only)');
+                setupUI();
+                renderGrid();
+                if (activeIndex >= 0 && activeIndex < channels.length) playChannel(activeIndex);
+                else if (channels.length > 0) { activeIndex = 0;
+                    playChannel(0); }
+                updateTabCounts();
+                console.log('🚀 StreamStation Pro ready');
+            }
             init();
         })();
     </script>
