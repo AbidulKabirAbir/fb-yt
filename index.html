@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StreamStation Pro • Cloud Sync Active</title>
+    <title>StreamStation Pro • Fixed Cloud Sync</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js">
     </script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js">
@@ -60,7 +60,6 @@
             gap: 6px;
         }
 
-        /* HEADER */
         .header {
             display: flex;
             align-items: center;
@@ -183,19 +182,19 @@
             border-radius: 8px;
             background: var(--surface);
             border: 1px solid var(--border);
-            cursor: default;
         }
         .sync-dot {
             width: 6px;
             height: 6px;
             border-radius: 50%;
+        }
+        .sync-dot.on {
             background: #22c55e;
         }
-        .sync-dot.offline {
+        .sync-dot.off {
             background: #ef4444;
         }
 
-        /* PLAYER */
         .player-wrapper {
             background: #0a101f;
             border-radius: 10px;
@@ -254,7 +253,6 @@
             display: block;
         }
 
-        /* TABS */
         .tabs {
             display: flex;
             gap: 3px;
@@ -286,7 +284,6 @@
             font-size: 8px;
         }
 
-        /* GRID */
         .channel-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
@@ -397,7 +394,6 @@
             background: #0d9488;
         }
 
-        /* ADD SECTION */
         .add-section {
             background: var(--surface);
             border-radius: 10px;
@@ -428,7 +424,6 @@
             flex-shrink: 0;
         }
 
-        /* MODAL */
         .modal {
             position: fixed;
             inset: 0;
@@ -509,7 +504,7 @@
                 <span class="live-dot"></span> <strong id="currentChannelLabel">-</strong>
             </div>
             <div class="header-right">
-                <span class="sync-badge" id="syncStatus" title="Sync active"><span class="sync-dot" id="syncDot"></span> <span id="syncText">Live</span></span>
+                <span class="sync-badge" id="syncStatus" title="Sync status"><span class="sync-dot" id="syncDot"></span> <span id="syncText">Off</span></span>
                 <button class="btn" id="shuffleBtn" title="Random">🎲</button>
                 <button class="btn" id="exportBtn" title="Export">💾</button>
                 <button class="btn" id="importBtn" title="Import">📂</button>
@@ -553,7 +548,6 @@
         </div>
     </div>
 
-    <!-- Edit Channel Modal -->
     <div class="modal" id="editModal">
         <div class="modal-content">
             <h3>✏️ Edit Channel</h3>
@@ -577,11 +571,11 @@
 
     <script>
         (() => {
-            // ── YOUR FIREBASE CONFIG – ALREADY EMBEDDED ──
+            // ── CORRECTED FIREBASE CONFIG ──
             const firebaseConfig = {
                 apiKey: "AIzaSyAxf2AANYSTxAHzOzLa4RT8Eyi68Z8b0tA",
                 authDomain: "streamstation-4b55e.firebaseapp.com",
-                databaseURL: "https://streamstation-4b55e-default-rtdb.firebaseio.com", // important: realtime DB URL
+                databaseURL: "https://streamstation-4b55e-default-rtdb.asia-southeast1.firebasedatabase.app",
                 projectId: "streamstation-4b55e",
                 storageBucket: "streamstation-4b55e.firebasestorage.app",
                 messagingSenderId: "873439558930",
@@ -626,7 +620,7 @@
                 toastEl.textContent = msg;
                 toastEl.style.color = error ? '#fca5a5' : '#e2e8f0';
                 toastEl.classList.add('show');
-                toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
+                toastTimer = setTimeout(() => toastEl.classList.remove('show'), 3500);
             }
 
             function detectCategory(url) {
@@ -932,49 +926,102 @@
                 try {
                     firebase.initializeApp(firebaseConfig);
                     firebaseRef = firebase.database().ref('channels');
-                    firebaseRef.once('value', snapshot => {
-                        const serverChannels = [];
-                        snapshot.forEach(child => serverChannels.push({ ...child.val(), firebaseKey: child.key }));
-                        const merged = [...serverChannels];
-                        channels.forEach(local => {
-                            if (!local.firebaseKey && !serverChannels.some(s => s.url === local.url)) {
-                                merged.push(local);
-                            }
-                        });
-                        channels = merged;
-                        saveLocal();
-                        renderGrid();
-                        if (activeIndex >= channels.length) activeIndex = channels.length > 0 ? 0 : -1;
-                        if (activeIndex >= 0) playChannel(activeIndex);
-                    });
-                    firebaseRef.on('child_added', snap => {
-                        const data = snap.val();
-                        if (!channels.some(c => c.firebaseKey === snap.key)) {
-                            channels.push({ ...data, firebaseKey: snap.key });
+                    
+                    // Test connection
+                    firebaseRef.child('.info/connected').once('value', snap => {
+                        if (snap.val() === true) {
+                            isFirebaseActive = true;
+                            updateSyncUI(true);
+                            showToast('☁️ Cloud sync connected!');
+                            
+                            // Push local channels that don't have firebaseKey yet
+                            channels.forEach((ch, idx) => {
+                                if (!ch.firebaseKey) {
+                                    const newRef = firebaseRef.push();
+                                    ch.firebaseKey = newRef.key;
+                                    newRef.set({
+                                        name: ch.name,
+                                        url: ch.url,
+                                        category: ch.category,
+                                        emoji: ch.emoji,
+                                        thumbnail: ch.thumbnail
+                                    });
+                                }
+                            });
                             saveLocal();
-                            renderGrid();
+                            
+                            // Fetch server channels and merge
+                            firebaseRef.once('value', snapshot => {
+                                const serverChannels = [];
+                                snapshot.forEach(child => {
+                                    if (child.key.startsWith('.')) return; // skip internal keys
+                                    serverChannels.push({ ...child.val(), firebaseKey: child.key });
+                                });
+                                
+                                // Merge: prefer server version for existing keys
+                                const merged = [...serverChannels];
+                                channels.forEach(local => {
+                                    if (!local.firebaseKey && !serverChannels.some(s => s.url === local.url)) {
+                                        merged.push(local);
+                                    }
+                                });
+                                channels = merged;
+                                saveLocal();
+                                renderGrid();
+                                if (activeIndex >= channels.length) activeIndex = channels.length > 0 ? 0 : -1;
+                                if (activeIndex >= 0 && channels.length > 0) playChannel(activeIndex);
+                            });
+                            
+                            // Real-time listeners
+                            firebaseRef.on('child_added', snap => {
+                                if (snap.key.startsWith('.')) return;
+                                const data = snap.val();
+                                if (!data) return;
+                                if (!channels.some(c => c.firebaseKey === snap.key)) {
+                                    channels.push({ ...data, firebaseKey: snap.key });
+                                    saveLocal();
+                                    renderGrid();
+                                    showToast(`🆕 New channel from cloud: "${data.name}"`);
+                                }
+                            });
+                            
+                            firebaseRef.on('child_removed', snap => {
+                                const idx = channels.findIndex(c => c.firebaseKey === snap.key);
+                                if (idx >= 0) { 
+                                    channels.splice(idx, 1); 
+                                    saveLocal(); 
+                                    renderGrid(); 
+                                    showToast('☁️ Channel removed from cloud');
+                                }
+                            });
+                            
+                            firebaseRef.on('child_changed', snap => {
+                                if (snap.key.startsWith('.')) return;
+                                const idx = channels.findIndex(c => c.firebaseKey === snap.key);
+                                if (idx >= 0) { 
+                                    Object.assign(channels[idx], snap.val()); 
+                                    saveLocal(); 
+                                    renderGrid(); 
+                                }
+                            });
+                            
+                        } else {
+                            isFirebaseActive = false;
+                            updateSyncUI(false);
+                            showToast('❌ Database not accessible. Make sure it exists in Firebase console.', true);
                         }
                     });
-                    firebaseRef.on('child_removed', snap => {
-                        const idx = channels.findIndex(c => c.firebaseKey === snap.key);
-                        if (idx >= 0) { channels.splice(idx, 1); saveLocal(); renderGrid(); }
-                    });
-                    firebaseRef.on('child_changed', snap => {
-                        const idx = channels.findIndex(c => c.firebaseKey === snap.key);
-                        if (idx >= 0) { Object.assign(channels[idx], snap.val()); saveLocal(); renderGrid(); }
-                    });
-                    isFirebaseActive = true;
-                    updateSyncUI(true);
-                    showToast('☁️ Cloud sync active – channels shared');
+                    
                 } catch (e) {
-                    console.warn('Firebase init error', e);
+                    console.warn('Firebase init error:', e);
                     isFirebaseActive = false;
                     updateSyncUI(false);
+                    showToast('❌ Firebase error: ' + e.message, true);
                 }
             }
 
             function updateSyncUI(active) {
-                syncDot.className = 'sync-dot ' + (active ? '' : 'offline');
+                syncDot.className = 'sync-dot ' + (active ? 'on' : 'off');
                 syncText.textContent = active ? 'Live' : 'Off';
             }
 
@@ -1062,12 +1109,11 @@
                     activeIndex = 0;
                     saveLocal();
                 }
-                initFirebase(); // auto‑start with your config
+                initFirebase();
                 setupUI();
                 renderGrid();
                 if (activeIndex >= 0 && activeIndex < channels.length) playChannel(activeIndex);
                 else if (channels.length) { activeIndex = 0; playChannel(0); }
-                updateSyncUI(isFirebaseActive);
             }
             init();
         })();
