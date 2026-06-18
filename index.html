@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StreamStation Pro • Fixed Cloud Sync</title>
+    <title>StreamStation Pro • Fixed Firebase Path</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js">
     </script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js">
@@ -925,16 +925,17 @@
             function initFirebase() {
                 try {
                     firebase.initializeApp(firebaseConfig);
+                    // Use root database reference for .info/connected
+                    const rootRef = firebase.database().ref();
                     firebaseRef = firebase.database().ref('channels');
-                    
-                    // Test connection
-                    firebaseRef.child('.info/connected').once('value', snap => {
+
+                    rootRef.child('.info/connected').once('value', snap => {
                         if (snap.val() === true) {
                             isFirebaseActive = true;
                             updateSyncUI(true);
                             showToast('☁️ Cloud sync connected!');
-                            
-                            // Push local channels that don't have firebaseKey yet
+
+                            // Push local channels without firebaseKey to cloud
                             channels.forEach((ch, idx) => {
                                 if (!ch.firebaseKey) {
                                     const newRef = firebaseRef.push();
@@ -949,16 +950,16 @@
                                 }
                             });
                             saveLocal();
-                            
-                            // Fetch server channels and merge
+
+                            // Fetch existing server channels and merge
                             firebaseRef.once('value', snapshot => {
                                 const serverChannels = [];
                                 snapshot.forEach(child => {
-                                    if (child.key.startsWith('.')) return; // skip internal keys
-                                    serverChannels.push({ ...child.val(), firebaseKey: child.key });
+                                    if (child.key && !child.key.startsWith('.')) {
+                                        const data = child.val();
+                                        if (data) serverChannels.push({ ...data, firebaseKey: child.key });
+                                    }
                                 });
-                                
-                                // Merge: prefer server version for existing keys
                                 const merged = [...serverChannels];
                                 channels.forEach(local => {
                                     if (!local.firebaseKey && !serverChannels.some(s => s.url === local.url)) {
@@ -971,47 +972,45 @@
                                 if (activeIndex >= channels.length) activeIndex = channels.length > 0 ? 0 : -1;
                                 if (activeIndex >= 0 && channels.length > 0) playChannel(activeIndex);
                             });
-                            
+
                             // Real-time listeners
                             firebaseRef.on('child_added', snap => {
-                                if (snap.key.startsWith('.')) return;
+                                if (snap.key && snap.key.startsWith('.')) return;
                                 const data = snap.val();
-                                if (!data) return;
-                                if (!channels.some(c => c.firebaseKey === snap.key)) {
-                                    channels.push({ ...data, firebaseKey: snap.key });
-                                    saveLocal();
-                                    renderGrid();
-                                    showToast(`🆕 New channel from cloud: "${data.name}"`);
-                                }
+                                if (!data || channels.some(c => c.firebaseKey === snap.key)) return;
+                                channels.push({ ...data, firebaseKey: snap.key });
+                                saveLocal();
+                                renderGrid();
+                                showToast(`🆕 New from cloud: "${data.name}"`);
                             });
-                            
+
                             firebaseRef.on('child_removed', snap => {
                                 const idx = channels.findIndex(c => c.firebaseKey === snap.key);
-                                if (idx >= 0) { 
-                                    channels.splice(idx, 1); 
-                                    saveLocal(); 
-                                    renderGrid(); 
-                                    showToast('☁️ Channel removed from cloud');
+                                if (idx >= 0) {
+                                    channels.splice(idx, 1);
+                                    saveLocal();
+                                    renderGrid();
+                                    showToast('☁️ Channel removed');
                                 }
                             });
-                            
+
                             firebaseRef.on('child_changed', snap => {
-                                if (snap.key.startsWith('.')) return;
+                                if (snap.key && snap.key.startsWith('.')) return;
                                 const idx = channels.findIndex(c => c.firebaseKey === snap.key);
-                                if (idx >= 0) { 
-                                    Object.assign(channels[idx], snap.val()); 
-                                    saveLocal(); 
-                                    renderGrid(); 
+                                if (idx >= 0) {
+                                    Object.assign(channels[idx], snap.val());
+                                    saveLocal();
+                                    renderGrid();
                                 }
                             });
-                            
+
                         } else {
                             isFirebaseActive = false;
                             updateSyncUI(false);
-                            showToast('❌ Database not accessible. Make sure it exists in Firebase console.', true);
+                            showToast('❌ Database not reachable. Ensure Realtime Database exists and rules allow public read/write.', true);
                         }
                     });
-                    
+
                 } catch (e) {
                     console.warn('Firebase init error:', e);
                     isFirebaseActive = false;
