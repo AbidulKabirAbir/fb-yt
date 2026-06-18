@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>StreamStation Pro</title>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, system-ui, sans-serif;
+        }
+
+        body {
+            background: #0b0f19;
+            color: #f1f5f9;
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .app {
+            max-width: 1200px;
+            width: 100%;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #1e293b;
+            margin-bottom: 24px;
+        }
+
+        .logo h1 {
+            font-size: 26px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .now-playing {
+            background: #1e293b;
+            padding: 6px 16px;
+            border-radius: 30px;
+            font-size: 14px;
+            border: 1px solid #334155;
+        }
+
+        .player-wrapper {
+            background: #111827;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            margin-bottom: 24px;
+        }
+
+        #playerContainer {
+            width: 100%;
+            aspect-ratio: 16 / 9;
+            background: #030712;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #playerContainer iframe,
+        #playerContainer video {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            display: block;
+        }
+
+        /* DIAGNOSTIC PANEL */
+        .diagnostic-panel {
+            background: #182235;
+            border-top: 1px solid #2e3d56;
+            padding: 14px 20px;
+            font-size: 13px;
+            color: #94a3b8;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .diagnostic-title {
+            color: #f43f5e;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .channel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 14px;
+            margin-bottom: 32px;
+        }
+
+        .channel-card {
+            background: #1e293b;
+            border-radius: 14px;
+            padding: 16px 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            border: 2px solid transparent;
+            text-align: center;
+        }
+
+        .channel-card:hover {
+            transform: translateY(-2px);
+            background: #24334d;
+            border-color: #475569;
+        }
+
+        .channel-card.active {
+            border-color: #38bdf8;
+            background: #1e293b;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+        }
+
+        .channel-card .emoji {
+            font-size: 28px;
+            display: block;
+            margin-bottom: 6px;
+        }
+
+        .channel-card .cname {
+            font-weight: 600;
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .channel-card .ctype {
+            font-size: 10px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-top: 6px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .ctype.youtube { background: #fee2e2; color: #ef4444; }
+        .ctype.facebook { background: #dbeafe; color: #2563eb; }
+        .ctype.live { background: #fef08a; color: #ca8a04; }
+
+        .add-section {
+            background: #111827;
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px dashed #334155;
+        }
+
+        .add-section h3 {
+            font-size: 15px;
+            margin-bottom: 12px;
+            color: #cbd5e1;
+        }
+
+        .add-form {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .add-form input {
+            flex: 1 1 200px;
+            padding: 10px 14px;
+            border-radius: 8px;
+            border: 1px solid #334155;
+            background: #0f172a;
+            color: #fff;
+            font-size: 13px;
+            outline: none;
+        }
+
+        .add-form input:focus {
+            border-color: #38bdf8;
+        }
+
+        .add-form button {
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: none;
+            background: #38bdf8;
+            color: #0f172a;
+            font-weight: 700;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+
+        .add-form button:hover {
+            background: #0ea5e9;
+        }
+
+        .fallback-text {
+            color: #64748b;
+            font-size: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app">
+        <div class="header">
+            <div class="logo">
+                <h1>📡 StreamStation Pro</h1>
+            </div>
+            <div class="now-playing">
+                📺 Playing: <strong id="currentChannelLabel">-</strong>
+            </div>
+        </div>
+
+        <div class="player-wrapper">
+            <div id="playerContainer">
+                <div class="fallback-text" id="fallbackText">Select a channel below</div>
+            </div>
+            <div class="diagnostic-panel">
+                <span class="diagnostic-title">⚠️ Video Black/Not Loading?</span>
+                <span>1. Turn off your browser's Ad-blocker/Shield for this page.</span>
+                <span>2. Make sure you aren't opening this file straight from your desktop files (use a local server).</span>
+            </div>
+        </div>
+
+        <div class="channel-grid" id="channelGrid"></div>
+
+        <div class="add-section">
+            <h3>➕ Add Custom Stream Link</h3>
+            <div class="add-form">
+                <input type="text" id="channelNameInput" placeholder="Stream Title (e.g., Lofi Live)" />
+                <input type="text" id="channelUrlInput" placeholder="Paste YouTube, Facebook, or m3u8 URL here..." />
+                <button id="addChannelBtn">Load Stream</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // Clean, working live streams for initialization
+            const defaultChannels = [
+                { name: 'Space Station Live', url: 'https://www.youtube.com/watch?v=21X5lGlDOfg', type: 'youtube', emoji: '🚀' },
+                { name: 'Lofi Girl Beats', url: 'https://www.youtube.com/watch?v=jfKfPfyJRdk', type: 'youtube', emoji: '🎧' },
+                { name: 'Aquarium Calm', url: 'https://www.youtube.com/watch?v=8r1CZpD4H6s', type: 'youtube', emoji: '🐠' },
+                { name: 'Facebook Public Video', url: 'https://www.facebook.com/PlayStation/videos/10155554431506803/', type: 'facebook', emoji: '📱' }
+            ];
+
+            let channels = [];
+            let activeIndex = 0;
+            let hlsInstance = null;
+            let currentPlayerElement = null;
+
+            const grid = document.getElementById('channelGrid');
+            const container = document.getElementById('playerContainer');
+            const currentLabel = document.getElementById('currentChannelLabel');
+            const fallbackText = document.getElementById('fallbackText');
+
+            function parseUrl(inputStr) {
+                const url = inputStr.trim();
+                
+                // 1. M3U8 Detection
+                if (url.includes('.m3u8')) {
+                    return { type: 'live', url: url };
+                }
+
+                // 2. Facebook Detection
+                if (/facebook\.com|fb\.watch|fb\.com/.test(url)) {
+                    if (url.includes('facebook.com/plugins/video.php')) {
+                        return { type: 'facebook', url: url };
+                    }
+                    const cleanFbUrl = encodeURIComponent(url);
+                    const embedUrl = `https://www.facebook.com/plugins/video.php?href=${cleanFbUrl}&show_text=0&autoplay=1&mute=1`;
+                    return { type: 'facebook', url: embedUrl };
+                }
+
+                // 3. YouTube Detection (Enhanced & Highly Stable)
+                const ytRegex = /(?:youtube(?:-nocookie)?\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?vw=|\S*?v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
+                const match = url.match(ytRegex);
+                if (match && match[1]) {
+                    // FIX: Use standard youtube.com and remove autoplay to prevent black screens
+                    return { 
+                        type: 'youtube', 
+                        url: `https://www.youtube.com/embed/${match[1]}?mute=0&controls=1&playsinline=1&rel=0` 
+                    };
+                }
+
+                // Fallback to standard frame
+                return { type: 'youtube', url: url };
+            }
+
+            function playChannel(index) {
+                if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
+                if (currentPlayerElement) { currentPlayerElement.remove(); currentPlayerElement = null; }
+                
+                fallbackText.style.display = 'none';
+                const channel = channels[index];
+                if (!channel) return;
+
+                currentLabel.textContent = channel.name;
+                const target = parseUrl(channel.url);
+
+                if (target.type === 'youtube' || target.type === 'facebook') {
+                    const iframe = document.createElement('iframe');
+                    iframe.src = target.url;
+                    
+                    // Critical cross-domain visibility headers
+                    iframe.setAttribute('allow', 'autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; fullscreen');
+                    iframe.setAttribute('allowfullscreen', 'true');
+                    iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
+                    iframe.setAttribute('frameborder', '0');
+                    iframe.setAttribute('scrolling', 'no');
+                    
+                    container.appendChild(iframe);
+                    currentPlayerElement = iframe;
+                } else if (target.type === 'live') {
+                    const video = document.createElement('video');
+                    video.controls = true;
+                    video.autoplay = true;
+                    video.muted = true;
+                    video.playsInline = true;
+                    container.appendChild(video);
+                    currentPlayerElement = video;
+
+                    if (Hls.isSupported()) {
+                        hlsInstance = new Hls();
+                        hlsInstance.loadSource(target.url);
+                        hlsInstance.attachMedia(video);
+                    } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                        video.src = target.url;
+                    }
+                }
+            }
+
+            function renderGrid() {
+                grid.innerHTML = '';
+                channels.forEach((ch, idx) => {
+                    const card = document.createElement('div');
+                    card.className = `channel-card ${idx === activeIndex ? 'active' : ''}`;
+                    
+                    card.innerHTML = `
+                        <span class="emoji">${ch.emoji || '📺'}</span>
+                        <div class="cname">${ch.name}</div>
+                        <span class="ctype ${ch.type}">${ch.type}</span>
+                    `;
+
+                    card.addEventListener('click', () => {
+                        activeIndex = idx;
+                        renderGrid();
+                        playChannel(activeIndex);
+                        localStorage.setItem('stream_station_idx', activeIndex);
+                    });
+                    grid.appendChild(card);
+                });
+            }
+
+            // Initialization routine
+            const savedChannels = localStorage.getItem('stream_station_chans');
+            const savedIdx = localStorage.getItem('stream_station_idx');
+            
+            if (savedChannels) {
+                channels = JSON.parse(savedChannels);
+                activeIndex = parseInt(savedIdx) || 0;
+            } else {
+                channels = defaultChannels;
+                activeIndex = 0;
+            }
+
+            document.getElementById('addChannelBtn').addEventListener('click', () => {
+                const nameInp = document.getElementById('channelNameInput');
+                const urlInp = document.getElementById('channelUrlInput');
+                
+                if (!nameInp.value || !urlInp.value) {
+                    alert('Please fill out both the title and stream link fields.');
+                    return;
+                }
+
+                const info = parseUrl(urlInp.value);
+                channels.push({
+                    name: nameInp.value.trim(),
+                    url: urlInp.value.trim(),
+                    type: info.type,
+                    emoji: info.type === 'youtube' ? '▶️' : (info.type === 'facebook' ? '📱' : '🔴')
+                });
+
+                activeIndex = channels.length - 1;
+                localStorage.setItem('stream_station_chans', JSON.stringify(channels));
+                localStorage.setItem('stream_station_idx', activeIndex);
+                
+                nameInp.value = '';
+                urlInp.value = '';
+                renderGrid();
+                playChannel(activeIndex);
+            });
+
+            renderGrid();
+            playChannel(activeIndex);
+        })();
+    </script>
+</body>
+</html>
