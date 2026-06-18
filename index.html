@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>StreamStation Pro</title>
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest">
+    </script>
 
     <style>
         * {
@@ -61,6 +62,7 @@
             overflow: hidden;
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
             margin-bottom: 24px;
+            position: relative;
         }
 
         #playerContainer {
@@ -70,6 +72,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            position: relative;
         }
 
         #playerContainer iframe,
@@ -80,7 +83,97 @@
             display: block;
         }
 
-        /* DIAGNOSTIC PANEL */
+        /* ---- DuckDuckGo auto-unblock overlay ---- */
+        #ddgUnblockOverlay {
+            display: none;
+            position: absolute;
+            inset: 0;
+            background: rgba(11, 15, 25, 0.92);
+            backdrop-filter: blur(6px);
+            z-index: 50;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 16px;
+            padding: 30px;
+            text-align: center;
+            border-radius: 0 0 20px 20px;
+        }
+
+        #ddgUnblockOverlay.visible {
+            display: flex;
+        }
+
+        #ddgUnblockOverlay .icon {
+            font-size: 48px;
+        }
+
+        #ddgUnblockOverlay h3 {
+            font-size: 20px;
+            color: #f1f5f9;
+        }
+
+        #ddgUnblockOverlay p {
+            color: #94a3b8;
+            max-width: 480px;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        #ddgUnblockOverlay .btn-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 6px;
+        }
+
+        #ddgUnblockOverlay .btn-unblock {
+            padding: 12px 32px;
+            border-radius: 40px;
+            border: none;
+            background: #38bdf8;
+            color: #0b0f19;
+            font-weight: 700;
+            font-size: 15px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.25);
+        }
+
+        #ddgUnblockOverlay .btn-unblock:hover {
+            background: #0ea5e9;
+            transform: scale(1.03);
+        }
+
+        #ddgUnblockOverlay .btn-skip {
+            padding: 10px 22px;
+            border-radius: 40px;
+            border: 1px solid #475569;
+            background: transparent;
+            color: #94a3b8;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        #ddgUnblockOverlay .btn-skip:hover {
+            border-color: #94a3b8;
+            color: #f1f5f9;
+        }
+
+        #ddgUnblockOverlay .status-badge {
+            font-size: 12px;
+            color: #facc15;
+            background: #1e293b;
+            padding: 4px 14px;
+            border-radius: 20px;
+            border: 1px solid #334155;
+            display: inline-block;
+        }
+
+        /* ---- DIAGNOSTIC PANEL ---- */
         .diagnostic-panel {
             background: #182235;
             border-top: 1px solid #2e3d56;
@@ -101,6 +194,16 @@
             gap: 6px;
         }
 
+        .diagnostic-panel .hint {
+            color: #64748b;
+            font-size: 12px;
+        }
+
+        .diagnostic-panel .hint strong {
+            color: #e2e8f0;
+        }
+
+        /* ---- CHANNEL GRID ---- */
         .channel-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
@@ -154,10 +257,20 @@
             text-transform: uppercase;
         }
 
-        .ctype.youtube { background: #fee2e2; color: #ef4444; }
-        .ctype.facebook { background: #dbeafe; color: #2563eb; }
-        .ctype.live { background: #fef08a; color: #ca8a04; }
+        .ctype.youtube {
+            background: #fee2e2;
+            color: #ef4444;
+        }
+        .ctype.facebook {
+            background: #dbeafe;
+            color: #2563eb;
+        }
+        .ctype.live {
+            background: #fef08a;
+            color: #ca8a04;
+        }
 
+        /* ---- ADD SECTION ---- */
         .add-section {
             background: #111827;
             border-radius: 16px;
@@ -212,11 +325,33 @@
             color: #64748b;
             font-size: 15px;
         }
+
+        /* ---- RESPONSIVE ---- */
+        @media (max-width: 640px) {
+            .header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            .diagnostic-panel {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 6px;
+            }
+            #ddgUnblockOverlay .btn-group {
+                flex-direction: column;
+                width: 100%;
+            }
+            #ddgUnblockOverlay .btn-unblock,
+            #ddgUnblockOverlay .btn-skip {
+                width: 100%;
+            }
+        }
     </style>
 </head>
 <body>
 
     <div class="app">
+        <!-- HEADER -->
         <div class="header">
             <div class="logo">
                 <h1>📡 StreamStation Pro</h1>
@@ -226,24 +361,46 @@
             </div>
         </div>
 
+        <!-- PLAYER -->
         <div class="player-wrapper">
             <div id="playerContainer">
                 <div class="fallback-text" id="fallbackText">Select a channel below</div>
+
+                <!-- DuckDuckGo unblock overlay (injected by us) -->
+                <div id="ddgUnblockOverlay">
+                    <div class="icon">🦆</div>
+                    <h3>DuckDuckGo blocked this video</h3>
+                    <p>
+                        DuckDuckGo blocked Facebook tracking on this page.
+                        <br />
+                        Click <strong>Unblock</strong> below to load the video.
+                    </p>
+                    <div class="btn-group">
+                        <button class="btn-unblock" id="ddgUnblockBtn">🔓 Unblock Facebook Video</button>
+                        <button class="btn-skip" id="ddgSkipBtn">⏭️ Skip (stay blocked)</button>
+                    </div>
+                    <div class="status-badge" id="ddgStatusBadge">⏳ Waiting for blocker…</div>
+                </div>
             </div>
+
+            <!-- DIAGNOSTIC PANEL -->
             <div class="diagnostic-panel">
-                <span class="diagnostic-title">⚠️ Stream Protection Alert</span>
-                <span>• Privacy tools (like DuckDuckGo) block Facebook embeds automatically. Click "Unblock Facebook Video" inside the frame if prompted.</span>
-                <span>• Run this file via a local server environment if video streams fail to initiate locally.</span>
+                <span class="diagnostic-title">⚠️ Video Black / Not Loading?</span>
+                <span>• If you see a DuckDuckGo blocker, we try to auto‑unblock it.</span>
+                <span class="hint">• If auto‑unblock fails, click the <strong>“Unblock”</strong> button that appears on the video.</span>
+                <span>• Make sure you're not opening this file directly from your desktop (use a local server).</span>
             </div>
         </div>
 
+        <!-- CHANNEL GRID -->
         <div class="channel-grid" id="channelGrid"></div>
 
+        <!-- ADD SECTION -->
         <div class="add-section">
             <h3>➕ Add Custom Stream Link</h3>
             <div class="add-form">
                 <input type="text" id="channelNameInput" placeholder="Stream Title (e.g., Lofi Live)" />
-                <input type="text" id="channelUrlInput" placeholder="Paste YouTube, Facebook, or m3u8 URL here..." />
+                <input type="text" id="channelUrlInput" placeholder="Paste YouTube, Facebook, or m3u8 URL here…" />
                 <button id="addChannelBtn">Load Stream</button>
             </div>
         </div>
@@ -251,60 +408,226 @@
 
     <script>
         (function() {
-            // Pre-loaded streams for testing
+            'use strict';
+
+            // ─── DEFAULT CHANNELS ───────────────────────────────────────────────
             const defaultChannels = [
-                { name: 'Space Station Live', url: 'https://www.youtube.com/watch?v=21X5lGlDOfg', type: 'youtube', emoji: '🚀' },
-                { name: 'Lofi Girl Beats', url: 'https://www.youtube.com/watch?v=jfKfPfyJRdk', type: 'youtube', emoji: '🎧' },
-                { name: 'Aquarium Calm', url: 'https://www.youtube.com/watch?v=8r1CZpD4H6s', type: 'youtube', emoji: '🐠' },
-                { name: 'Facebook Public Video', url: 'https://www.facebook.com/PlayStation/videos/10155554431506803/', type: 'facebook', emoji: '📱' }
+                { name: 'Space Station Live', url: 'https://www.youtube.com/watch?v=21X5lGlDOfg', type: 'youtube',
+                    emoji: '🚀' },
+                { name: 'Lofi Girl Beats', url: 'https://www.youtube.com/watch?v=jfKfPfyJRdk', type: 'youtube',
+                    emoji: '🎧' },
+                { name: 'Aquarium Calm', url: 'https://www.youtube.com/watch?v=8r1CZpD4H6s', type: 'youtube',
+                    emoji: '🐠' },
+                { name: 'Facebook Video', url: 'https://www.facebook.com/PlayStation/videos/10155554431506803/',
+                    type: 'facebook', emoji: '📱' }
             ];
 
+            // ─── STATE ──────────────────────────────────────────────────────────
             let channels = [];
             let activeIndex = 0;
             let hlsInstance = null;
             let currentPlayerElement = null;
+            let ddgObserver = null;
+            let ddgUnblockAttempted = false;
+            let ddgWatchInterval = null;
 
+            // ─── DOM REFS ──────────────────────────────────────────────────────
             const grid = document.getElementById('channelGrid');
             const container = document.getElementById('playerContainer');
             const currentLabel = document.getElementById('currentChannelLabel');
             const fallbackText = document.getElementById('fallbackText');
+            const ddgOverlay = document.getElementById('ddgUnblockOverlay');
+            const ddgBtn = document.getElementById('ddgUnblockBtn');
+            const ddgSkipBtn = document.getElementById('ddgSkipBtn');
+            const ddgStatus = document.getElementById('ddgStatusBadge');
 
+            // ─── URL PARSER ────────────────────────────────────────────────────
             function parseUrl(inputStr) {
                 const url = inputStr.trim();
-                
-                // 1. M3U8 Stream Parsing
                 if (url.includes('.m3u8')) {
                     return { type: 'live', url: url };
                 }
-
-                // 2. Facebook Embed Parsing
+                // Facebook
                 if (/facebook\.com|fb\.watch|fb\.com/.test(url)) {
-                    if (url.includes('facebook.com/plugins/video.php')) {
-                        return { type: 'facebook', url: url };
-                    }
-                    const cleanFbUrl = encodeURIComponent(url);
-                    const embedUrl = `https://www.facebook.com/plugins/video.php?href=${cleanFbUrl}&show_text=0&autoplay=1&mute=1`;
-                    return { type: 'facebook', url: embedUrl };
+                    const clean = encodeURIComponent(url);
+                    return {
+                        type: 'facebook',
+                        url: `https://www.facebook.com/plugins/video.php?href=${clean}&show_text=0&autoplay=1&mute=1`
+                    };
                 }
-
-                // 3. YouTube Embed Parsing
+                // YouTube
                 const ytRegex = /(?:youtube(?:-nocookie)?\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?vw=|\S*?v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
                 const match = url.match(ytRegex);
                 if (match && match[1]) {
-                    return { 
-                        type: 'youtube', 
-                        url: `https://www.youtube.com/embed/${match[1]}?mute=0&controls=1&playsinline=1&rel=0` 
+                    return {
+                        type: 'youtube',
+                        url: `https://www.youtube.com/embed/${match[1]}?mute=0&controls=1&playsinline=1&rel=0`
                     };
                 }
-
-                // Standard fallback
                 return { type: 'youtube', url: url };
             }
 
+            // ─── DUCKDUCKGO AUTO‑UNBLOCK ────────────────────────────────────
+            function setupDdgAutoUnblock() {
+                // 1) MutationObserver: watch for DuckDuckGo's blocker elements
+                if (ddgObserver) ddgObserver.disconnect();
+                ddgObserver = new MutationObserver(() => {
+                    tryFindAndClickDdgButton();
+                });
+                ddgObserver.observe(document.body, { childList: true, subtree: true });
+
+                // 2) Also poll for safety (in case observer misses it)
+                if (ddgWatchInterval) clearInterval(ddgWatchInterval);
+                ddgWatchInterval = setInterval(() => {
+                    tryFindAndClickDdgButton();
+                }, 800);
+
+                // 3) Click the button we expose in our overlay
+                ddgBtn.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                    // Try the DuckDuckGo button first, then fallback to our own iframe reload
+                    const ddgNativeBtn = findDdgNativeButton();
+                    if (ddgNativeBtn) {
+                        ddgNativeBtn.click();
+                        ddgStatus.textContent = '✅ Unblock clicked! (native)';
+                        ddgStatus.style.color = '#4ade80';
+                        hideDdgOverlayAfterDelay();
+                    } else {
+                        // If we can't find the native button, try reloading the iframe with a trick
+                        attemptIframeReload();
+                        ddgStatus.textContent = '🔄 Reloading iframe…';
+                    }
+                    ddgUnblockAttempted = true;
+                });
+
+                ddgSkipBtn.addEventListener('click', function() {
+                    ddgOverlay.classList.remove('visible');
+                    ddgStatus.textContent = '⏭️ Skipped (blocked)';
+                    ddgStatus.style.color = '#facc15';
+                    if (ddgWatchInterval) clearInterval(ddgWatchInterval);
+                });
+            }
+
+            function findDdgNativeButton() {
+                // DuckDuckGo extension uses class "DuckDuckGoButton primary"
+                // Also look for any button containing "Unblock" text
+                const selectors = [
+                    '.DuckDuckGoButton.primary',
+                    '.DuckDuckGoButton',
+                    'button[class*="DuckDuckGo"]',
+                    'button:has(div:contains("Unblock"))',
+                    // fallback: any button with "Unblock" text
+                ];
+                for (const sel of selectors) {
+                    try {
+                        const el = document.querySelector(sel);
+                        if (el) return el;
+                    } catch (_) { /* ignore */ }
+                }
+                // Manual search for any button with "Unblock" text
+                const allBtns = document.querySelectorAll('button');
+                for (const btn of allBtns) {
+                    if (btn.textContent && btn.textContent.toLowerCase().includes('unblock')) {
+                        return btn;
+                    }
+                }
+                return null;
+            }
+
+            function tryFindAndClickDdgButton() {
+                // Only run if we haven't already succeeded and the overlay is not visible
+                if (ddgUnblockAttempted) return;
+                const btn = findDdgNativeButton();
+                if (btn) {
+                    ddgStatus.textContent = '🔍 DuckDuckGo blocker detected!';
+                    ddgStatus.style.color = '#facc15';
+                    // Show our overlay to give user control
+                    ddgOverlay.classList.add('visible');
+
+                    // Auto‑click after a short delay (user can still click manually)
+                    // We do this only once per video load
+                    if (!ddgUnblockAttempted) {
+                        ddgUnblockAttempted = true;
+                        setTimeout(() => {
+                            // Try to click the native button
+                            const nativeBtn = findDdgNativeButton();
+                            if (nativeBtn) {
+                                nativeBtn.click();
+                                ddgStatus.textContent = '✅ Auto‑unblocked!';
+                                ddgStatus.style.color = '#4ade80';
+                                hideDdgOverlayAfterDelay();
+                            } else {
+                                ddgStatus.textContent = '⚠️ Could not auto‑click. Use the button below.';
+                                ddgStatus.style.color = '#f87171';
+                            }
+                        }, 1200);
+                    }
+                } else {
+                    // If no blocker is found but we're showing the overlay for a facebook video, hide it
+                    const isFacebook = channels[activeIndex] && channels[activeIndex].type === 'facebook';
+                    if (isFacebook && ddgOverlay.classList.contains('visible')) {
+                        // Check if the iframe loaded successfully (no blocker)
+                        const iframe = container.querySelector('iframe');
+                        if (iframe && iframe.src && iframe.src.includes('facebook.com')) {
+                            // If the iframe has content, the blocker might be gone
+                            // We'll hide the overlay after a moment
+                            setTimeout(() => {
+                                if (ddgOverlay.classList.contains('visible')) {
+                                    // Check if the iframe is actually showing content
+                                    // We can't read cross-origin content, but we can check if the iframe is visible
+                                    // and doesn't have the blocker overlay
+                                    const blockerInIframe = iframe.contentDocument &&
+                                        iframe.contentDocument.querySelector('.DuckDuckGoButton');
+                                    if (!blockerInIframe) {
+                                        ddgOverlay.classList.remove('visible');
+                                        ddgStatus.textContent = '✅ Video loaded!';
+                                        ddgStatus.style.color = '#4ade80';
+                                    }
+                                }
+                            }, 2000);
+                        }
+                    }
+                }
+            }
+
+            function hideDdgOverlayAfterDelay() {
+                setTimeout(() => {
+                    ddgOverlay.classList.remove('visible');
+                }, 800);
+            }
+
+            function attemptIframeReload() {
+                // Reload the iframe with a cache-busting parameter
+                const iframe = container.querySelector('iframe');
+                if (iframe && iframe.src) {
+                    const url = new URL(iframe.src);
+                    url.searchParams.set('_t', Date.now());
+                    iframe.src = url.toString();
+                    ddgStatus.textContent = '🔄 Reloaded – checking…';
+                    // Re-enable the observer for the new load
+                    ddgUnblockAttempted = false;
+                    setTimeout(() => {
+                        tryFindAndClickDdgButton();
+                    }, 1500);
+                }
+            }
+
+            // ─── PLAY CHANNEL ──────────────────────────────────────────────────
             function playChannel(index) {
-                if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
-                if (currentPlayerElement) { currentPlayerElement.remove(); currentPlayerElement = null; }
-                
+                // Cleanup
+                if (hlsInstance) { hlsInstance.destroy();
+                    hlsInstance = null; }
+                if (currentPlayerElement) { currentPlayerElement.remove();
+                    currentPlayerElement = null; }
+                if (ddgObserver) { ddgObserver.disconnect();
+                    ddgObserver = null; }
+                if (ddgWatchInterval) { clearInterval(ddgWatchInterval);
+                    ddgWatchInterval = null; }
+                ddgUnblockAttempted = false;
+                ddgOverlay.classList.remove('visible');
+                ddgStatus.textContent = '⏳ Waiting for blocker…';
+                ddgStatus.style.color = '#facc15';
+
                 fallbackText.style.display = 'none';
                 const channel = channels[index];
                 if (!channel) return;
@@ -315,16 +638,27 @@
                 if (target.type === 'youtube' || target.type === 'facebook') {
                     const iframe = document.createElement('iframe');
                     iframe.src = target.url;
-                    
-                    // Standard frame configurations and cross-origin permissions
                     iframe.setAttribute('allow', 'autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; fullscreen');
                     iframe.setAttribute('allowfullscreen', 'true');
                     iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
                     iframe.setAttribute('frameborder', '0');
                     iframe.setAttribute('scrolling', 'no');
-                    
                     container.appendChild(iframe);
                     currentPlayerElement = iframe;
+
+                    // If it's Facebook, arm the DuckDuckGo unblocker
+                    if (target.type === 'facebook') {
+                        // Show a brief "waiting" message
+                        ddgOverlay.classList.add('visible');
+                        ddgStatus.textContent = '🦆 Checking for DuckDuckGo blocker…';
+                        ddgStatus.style.color = '#facc15';
+                        // Start the auto-unblock machinery
+                        setTimeout(() => {
+                            setupDdgAutoUnblock();
+                            // Also try immediately
+                            setTimeout(tryFindAndClickDdgButton, 600);
+                        }, 400);
+                    }
                 } else if (target.type === 'live') {
                     const video = document.createElement('video');
                     video.controls = true;
@@ -344,18 +678,17 @@
                 }
             }
 
+            // ─── RENDER GRID ──────────────────────────────────────────────────
             function renderGrid() {
                 grid.innerHTML = '';
                 channels.forEach((ch, idx) => {
                     const card = document.createElement('div');
                     card.className = `channel-card ${idx === activeIndex ? 'active' : ''}`;
-                    
                     card.innerHTML = `
                         <span class="emoji">${ch.emoji || '📺'}</span>
                         <div class="cname">${ch.name}</div>
                         <span class="ctype ${ch.type}">${ch.type}</span>
                     `;
-
                     card.addEventListener('click', () => {
                         activeIndex = idx;
                         renderGrid();
@@ -366,10 +699,10 @@
                 });
             }
 
-            // LocalStorage setup
+            // ─── INIT ──────────────────────────────────────────────────────────
             const savedChannels = localStorage.getItem('stream_station_chans');
             const savedIdx = localStorage.getItem('stream_station_idx');
-            
+
             if (savedChannels) {
                 channels = JSON.parse(savedChannels);
                 activeIndex = parseInt(savedIdx) || 0;
@@ -378,15 +711,14 @@
                 activeIndex = 0;
             }
 
+            // ─── ADD CHANNEL ──────────────────────────────────────────────────
             document.getElementById('addChannelBtn').addEventListener('click', () => {
                 const nameInp = document.getElementById('channelNameInput');
                 const urlInp = document.getElementById('channelUrlInput');
-                
                 if (!nameInp.value || !urlInp.value) {
-                    alert('Please fill out both fields.');
+                    alert('Please fill out both the title and stream link fields.');
                     return;
                 }
-
                 const info = parseUrl(urlInp.value);
                 channels.push({
                     name: nameInp.value.trim(),
@@ -394,19 +726,22 @@
                     type: info.type,
                     emoji: info.type === 'youtube' ? '▶️' : (info.type === 'facebook' ? '📱' : '🔴')
                 });
-
                 activeIndex = channels.length - 1;
                 localStorage.setItem('stream_station_chans', JSON.stringify(channels));
                 localStorage.setItem('stream_station_idx', activeIndex);
-                
                 nameInp.value = '';
                 urlInp.value = '';
                 renderGrid();
                 playChannel(activeIndex);
             });
 
+            // ─── START ─────────────────────────────────────────────────────────
             renderGrid();
             playChannel(activeIndex);
+
+            // ─── GLOBAL: expose for debugging ──────────────────────────────
+            window.__streamStation = { channels, activeIndex, playChannel, renderGrid };
+
         })();
     </script>
 </body>
