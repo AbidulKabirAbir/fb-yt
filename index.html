@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StreamStation Pro • Fixed Firebase Path</title>
+    <title>StreamStation Pro • Auto Sync</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js">
     </script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js">
@@ -487,6 +487,19 @@
             opacity: 1;
             transform: translateY(0);
         }
+        .error-banner {
+            background: #3b0a0a;
+            color: #fca5a5;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 10px;
+            border: 1px solid #7f1d1d;
+            margin-bottom: 4px;
+            display: none;
+        }
+        .error-banner.show {
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -505,6 +518,7 @@
             </div>
             <div class="header-right">
                 <span class="sync-badge" id="syncStatus" title="Sync status"><span class="sync-dot" id="syncDot"></span> <span id="syncText">Off</span></span>
+                <button class="btn" id="retrySyncBtn" title="Retry sync">🔄 Retry</button>
                 <button class="btn" id="shuffleBtn" title="Random">🎲</button>
                 <button class="btn" id="exportBtn" title="Export">💾</button>
                 <button class="btn" id="importBtn" title="Import">📂</button>
@@ -512,6 +526,7 @@
                 <button class="btn" id="themeToggle" title="Light/Dark">🌓</button>
             </div>
         </div>
+        <div class="error-banner" id="errorBanner"></div>
 
         <div class="player-wrapper">
             <div id="playerContainer">
@@ -571,7 +586,6 @@
 
     <script>
         (() => {
-            // ── CORRECTED FIREBASE CONFIG ──
             const firebaseConfig = {
                 apiKey: "AIzaSyAxf2AANYSTxAHzOzLa4RT8Eyi68Z8b0tA",
                 authDomain: "streamstation-4b55e.firebaseapp.com",
@@ -613,6 +627,8 @@
             const syncText = document.getElementById('syncText');
             const searchInput = document.getElementById('searchInput');
             const editModal = document.getElementById('editModal');
+            const errorBanner = document.getElementById('errorBanner');
+            const retrySyncBtn = document.getElementById('retrySyncBtn');
 
             let toastTimer;
             function showToast(msg, error = false) {
@@ -621,6 +637,14 @@
                 toastEl.style.color = error ? '#fca5a5' : '#e2e8f0';
                 toastEl.classList.add('show');
                 toastTimer = setTimeout(() => toastEl.classList.remove('show'), 3500);
+            }
+
+            function showErrorBanner(msg) {
+                errorBanner.textContent = msg;
+                errorBanner.classList.add('show');
+            }
+            function hideErrorBanner() {
+                errorBanner.classList.remove('show');
             }
 
             function detectCategory(url) {
@@ -925,98 +949,108 @@
             function initFirebase() {
                 try {
                     firebase.initializeApp(firebaseConfig);
-                    // Use root database reference for .info/connected
                     const rootRef = firebase.database().ref();
                     firebaseRef = firebase.database().ref('channels');
 
-                    rootRef.child('.info/connected').once('value', snap => {
-                        if (snap.val() === true) {
-                            isFirebaseActive = true;
-                            updateSyncUI(true);
-                            showToast('☁️ Cloud sync connected!');
-
-                            // Push local channels without firebaseKey to cloud
-                            channels.forEach((ch, idx) => {
-                                if (!ch.firebaseKey) {
-                                    const newRef = firebaseRef.push();
-                                    ch.firebaseKey = newRef.key;
-                                    newRef.set({
-                                        name: ch.name,
-                                        url: ch.url,
-                                        category: ch.category,
-                                        emoji: ch.emoji,
-                                        thumbnail: ch.thumbnail
-                                    });
-                                }
-                            });
-                            saveLocal();
-
-                            // Fetch existing server channels and merge
-                            firebaseRef.once('value', snapshot => {
-                                const serverChannels = [];
-                                snapshot.forEach(child => {
-                                    if (child.key && !child.key.startsWith('.')) {
-                                        const data = child.val();
-                                        if (data) serverChannels.push({ ...data, firebaseKey: child.key });
-                                    }
-                                });
-                                const merged = [...serverChannels];
-                                channels.forEach(local => {
-                                    if (!local.firebaseKey && !serverChannels.some(s => s.url === local.url)) {
-                                        merged.push(local);
-                                    }
-                                });
-                                channels = merged;
-                                saveLocal();
-                                renderGrid();
-                                if (activeIndex >= channels.length) activeIndex = channels.length > 0 ? 0 : -1;
-                                if (activeIndex >= 0 && channels.length > 0) playChannel(activeIndex);
-                            });
-
-                            // Real-time listeners
-                            firebaseRef.on('child_added', snap => {
-                                if (snap.key && snap.key.startsWith('.')) return;
-                                const data = snap.val();
-                                if (!data || channels.some(c => c.firebaseKey === snap.key)) return;
-                                channels.push({ ...data, firebaseKey: snap.key });
-                                saveLocal();
-                                renderGrid();
-                                showToast(`🆕 New from cloud: "${data.name}"`);
-                            });
-
-                            firebaseRef.on('child_removed', snap => {
-                                const idx = channels.findIndex(c => c.firebaseKey === snap.key);
-                                if (idx >= 0) {
-                                    channels.splice(idx, 1);
-                                    saveLocal();
-                                    renderGrid();
-                                    showToast('☁️ Channel removed');
-                                }
-                            });
-
-                            firebaseRef.on('child_changed', snap => {
-                                if (snap.key && snap.key.startsWith('.')) return;
-                                const idx = channels.findIndex(c => c.firebaseKey === snap.key);
-                                if (idx >= 0) {
-                                    Object.assign(channels[idx], snap.val());
-                                    saveLocal();
-                                    renderGrid();
-                                }
-                            });
-
-                        } else {
-                            isFirebaseActive = false;
-                            updateSyncUI(false);
-                            showToast('❌ Database not reachable. Ensure Realtime Database exists and rules allow public read/write.', true);
-                        }
-                    });
-
+                    // Attempt to write a test key to verify access
+                    const testRef = rootRef.child('_test_connection');
+                    testRef.set({ timestamp: Date.now() })
+                        .then(() => {
+                            // Success! Clean up test key and proceed
+                            testRef.remove();
+                            onConnectionVerified();
+                        })
+                        .catch(err => {
+                            console.warn('Firebase test write failed:', err.code, err.message);
+                            if (err.code === 'PERMISSION_DENIED') {
+                                showErrorBanner('🔒 Permission denied. Go to Firebase Console → Realtime Database → Rules, and set: { ".read": true, ".write": true }');
+                                updateSyncUI(false);
+                            } else {
+                                showErrorBanner('❌ Database not reachable. Ensure URL is correct and database exists.');
+                                updateSyncUI(false);
+                            }
+                        });
                 } catch (e) {
                     console.warn('Firebase init error:', e);
-                    isFirebaseActive = false;
                     updateSyncUI(false);
-                    showToast('❌ Firebase error: ' + e.message, true);
+                    showErrorBanner('Firebase init failed: ' + e.message);
                 }
+            }
+
+            function onConnectionVerified() {
+                isFirebaseActive = true;
+                updateSyncUI(true);
+                hideErrorBanner();
+                showToast('☁️ Cloud sync active!');
+
+                // Push local channels without firebaseKey
+                channels.forEach((ch) => {
+                    if (!ch.firebaseKey) {
+                        const newRef = firebaseRef.push();
+                        ch.firebaseKey = newRef.key;
+                        newRef.set({
+                            name: ch.name,
+                            url: ch.url,
+                            category: ch.category,
+                            emoji: ch.emoji,
+                            thumbnail: ch.thumbnail
+                        });
+                    }
+                });
+                saveLocal();
+
+                // Fetch server channels and merge
+                firebaseRef.once('value', snapshot => {
+                    const serverChannels = [];
+                    snapshot.forEach(child => {
+                        if (child.key && !child.key.startsWith('_')) {
+                            const data = child.val();
+                            if (data) serverChannels.push({ ...data, firebaseKey: child.key });
+                        }
+                    });
+                    const merged = [...serverChannels];
+                    channels.forEach(local => {
+                        if (!local.firebaseKey && !serverChannels.some(s => s.url === local.url)) {
+                            merged.push(local);
+                        }
+                    });
+                    channels = merged;
+                    saveLocal();
+                    renderGrid();
+                    if (activeIndex >= channels.length) activeIndex = channels.length > 0 ? 0 : -1;
+                    if (activeIndex >= 0 && channels.length > 0) playChannel(activeIndex);
+                });
+
+                // Real-time listeners
+                firebaseRef.on('child_added', snap => {
+                    if (snap.key && snap.key.startsWith('_')) return;
+                    const data = snap.val();
+                    if (!data || channels.some(c => c.firebaseKey === snap.key)) return;
+                    channels.push({ ...data, firebaseKey: snap.key });
+                    saveLocal();
+                    renderGrid();
+                    showToast(`🆕 New from cloud: "${data.name}"`);
+                });
+
+                firebaseRef.on('child_removed', snap => {
+                    const idx = channels.findIndex(c => c.firebaseKey === snap.key);
+                    if (idx >= 0) {
+                        channels.splice(idx, 1);
+                        saveLocal();
+                        renderGrid();
+                        showToast('☁️ Channel removed');
+                    }
+                });
+
+                firebaseRef.on('child_changed', snap => {
+                    if (snap.key && snap.key.startsWith('_')) return;
+                    const idx = channels.findIndex(c => c.firebaseKey === snap.key);
+                    if (idx >= 0) {
+                        Object.assign(channels[idx], snap.val());
+                        saveLocal();
+                        renderGrid();
+                    }
+                });
             }
 
             function updateSyncUI(active) {
@@ -1100,6 +1134,32 @@
                 document.getElementById('cancelEdit').addEventListener('click', () => editModal.classList.remove('open'));
                 document.getElementById('saveEdit').addEventListener('click', saveEdit);
                 window.addEventListener('click', (e) => { if (e.target === editModal) editModal.classList.remove('open'); });
+
+                retrySyncBtn.addEventListener('click', () => {
+                    hideErrorBanner();
+                    if (!firebase.apps.length) {
+                        initFirebase();
+                    } else {
+                        // Already initialized, attempt test again
+                        const testRef = firebase.database().ref('_test_connection');
+                        testRef.set({ timestamp: Date.now() })
+                            .then(() => {
+                                testRef.remove();
+                                if (!isFirebaseActive) {
+                                    onConnectionVerified();
+                                } else {
+                                    showToast('✅ Sync is already active');
+                                }
+                            })
+                            .catch(err => {
+                                if (err.code === 'PERMISSION_DENIED') {
+                                    showErrorBanner('🔒 Permission denied. Set Firebase Realtime Database rules to allow public read/write.');
+                                } else {
+                                    showErrorBanner('❌ Database still not reachable.');
+                                }
+                            });
+                    }
+                });
             }
 
             function init() {
