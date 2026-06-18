@@ -231,9 +231,9 @@
                 <div class="fallback-text" id="fallbackText">Select a channel below</div>
             </div>
             <div class="diagnostic-panel">
-                <span class="diagnostic-title">⚠️ Video Black/Not Loading?</span>
-                <span>1. If you see a privacy blocker (like DuckDuckGo) for Facebook, you must click unblock manually.</span>
-                <span>2. Make sure you aren't opening this file straight from your desktop files (use a local server).</span>
+                <span class="diagnostic-title">⚠️ Stream Protection Alert</span>
+                <span>• Privacy tools (like DuckDuckGo) block Facebook embeds automatically. Click "Unblock Facebook Video" inside the frame if prompted.</span>
+                <span>• Run this file via a local server environment if video streams fail to initiate locally.</span>
             </div>
         </div>
 
@@ -251,7 +251,7 @@
 
     <script>
         (function() {
-            // Clean, working live streams for initialization
+            // Pre-loaded streams for testing
             const defaultChannels = [
                 { name: 'Space Station Live', url: 'https://www.youtube.com/watch?v=21X5lGlDOfg', type: 'youtube', emoji: '🚀' },
                 { name: 'Lofi Girl Beats', url: 'https://www.youtube.com/watch?v=jfKfPfyJRdk', type: 'youtube', emoji: '🎧' },
@@ -272,34 +272,32 @@
             function parseUrl(inputStr) {
                 const url = inputStr.trim();
                 
-                // 1. M3U8 Detection
+                // 1. M3U8 Stream Parsing
                 if (url.includes('.m3u8')) {
                     return { type: 'live', url: url };
                 }
 
-                // 2. Facebook Detection
+                // 2. Facebook Embed Parsing
                 if (/facebook\.com|fb\.watch|fb\.com/.test(url)) {
                     if (url.includes('facebook.com/plugins/video.php')) {
                         return { type: 'facebook', url: url };
                     }
                     const cleanFbUrl = encodeURIComponent(url);
-                    // Facebook video embeds
                     const embedUrl = `https://www.facebook.com/plugins/video.php?href=${cleanFbUrl}&show_text=0&autoplay=1&mute=1`;
                     return { type: 'facebook', url: embedUrl };
                 }
 
-                // 3. YouTube Detection (Enhanced & Highly Stable)
+                // 3. YouTube Embed Parsing
                 const ytRegex = /(?:youtube(?:-nocookie)?\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?vw=|\S*?v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
                 const match = url.match(ytRegex);
                 if (match && match[1]) {
-                    // Standard youtube.com domain without forced autoplay to bypass strict browser policies
                     return { 
                         type: 'youtube', 
                         url: `https://www.youtube.com/embed/${match[1]}?mute=0&controls=1&playsinline=1&rel=0` 
                     };
                 }
 
-                // Fallback to standard frame
+                // Standard fallback
                 return { type: 'youtube', url: url };
             }
 
@@ -318,7 +316,7 @@
                     const iframe = document.createElement('iframe');
                     iframe.src = target.url;
                     
-                    // Critical cross-domain visibility headers
+                    // Standard frame configurations and cross-origin permissions
                     iframe.setAttribute('allow', 'autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; fullscreen');
                     iframe.setAttribute('allowfullscreen', 'true');
                     iframe.setAttribute('referrerpolicy', 'no-referrer-when-downgrade');
@@ -368,7 +366,7 @@
                 });
             }
 
-            // Initialization routine
+            // LocalStorage setup
             const savedChannels = localStorage.getItem('stream_station_chans');
             const savedIdx = localStorage.getItem('stream_station_idx');
             
@@ -385,7 +383,7 @@
                 const urlInp = document.getElementById('channelUrlInput');
                 
                 if (!nameInp.value || !urlInp.value) {
-                    alert('Please fill out both the title and stream link fields.');
+                    alert('Please fill out both fields.');
                     return;
                 }
 
