@@ -232,7 +232,7 @@
             </div>
             <div class="diagnostic-panel">
                 <span class="diagnostic-title">⚠️ Video Black/Not Loading?</span>
-                <span>1. Turn off your browser's Ad-blocker/Shield for this page.</span>
+                <span>1. If you see a privacy blocker (like DuckDuckGo) for Facebook, you must click unblock manually.</span>
                 <span>2. Make sure you aren't opening this file straight from your desktop files (use a local server).</span>
             </div>
         </div>
@@ -283,6 +283,7 @@
                         return { type: 'facebook', url: url };
                     }
                     const cleanFbUrl = encodeURIComponent(url);
+                    // Facebook video embeds
                     const embedUrl = `https://www.facebook.com/plugins/video.php?href=${cleanFbUrl}&show_text=0&autoplay=1&mute=1`;
                     return { type: 'facebook', url: embedUrl };
                 }
@@ -291,7 +292,7 @@
                 const ytRegex = /(?:youtube(?:-nocookie)?\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?vw=|\S*?v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i;
                 const match = url.match(ytRegex);
                 if (match && match[1]) {
-                    // FIX: Use standard youtube.com and remove autoplay to prevent black screens
+                    // Standard youtube.com domain without forced autoplay to bypass strict browser policies
                     return { 
                         type: 'youtube', 
                         url: `https://www.youtube.com/embed/${match[1]}?mute=0&controls=1&playsinline=1&rel=0` 
