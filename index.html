@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StreamStation Pro • Sync & Web Embed</title>
+    <title>StreamStation Pro • Ultimate Streaming Hub</title>
     <!-- Firebase (compat) for real‑time cross‑device sync -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js">
     </script>
@@ -33,12 +33,16 @@
             --border: #cbd5e1;
             --text: #0f172a;
             --text2: #475569;
-            --shadow: 0 2px 8px rgba(0,0,0,0.06);
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
         }
         body.compact {
-            font-size: 12px;
+            font-size: 11px;
         }
-        * { margin:0; padding:0; box-sizing:border-box; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         body {
             background: var(--bg);
             color: var(--text);
@@ -46,89 +50,470 @@
             min-height: 100vh;
             display: flex;
             justify-content: center;
-            padding: 10px;
+            padding: 8px;
             transition: background 0.3s, color 0.3s;
         }
-        .app { max-width:1200px; width:100%; display:flex; flex-direction:column; gap:10px; }
+        .app {
+            max-width: 1200px;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
 
         /* HEADER */
-        .header { display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
-        .logo { display:flex; align-items:center; gap:8px; }
-        .logo .icon { width:36px; height:36px; border-radius:10px; background:linear-gradient(135deg,#38bdf8,#818cf8); display:flex; align-items:center; justify-content:center; font-size:20px; }
-        .logo h1 { font-size:1.2rem; font-weight:800; background:linear-gradient(135deg,#f1f5f9,#38bdf8); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
-        .header-right { margin-left:auto; display:flex; gap:6px; align-items:center; flex-wrap:wrap; }
-        .status-dot { width:8px; height:8px; border-radius:50%; background:#22c55e; margin-right:4px; display:inline-block; }
-        .status-dot.offline { background:#ef4444; }
-        .sync-badge { font-size:11px; padding:4px 10px; border-radius:12px; background:var(--surface); border:1px solid var(--border); display:flex; align-items:center; gap:4px; cursor:pointer; }
-        .btn { padding:5px 10px; border-radius:6px; border:1px solid var(--border); background:var(--surface); color:var(--text2); font-size:12px; cursor:pointer; display:flex; align-items:center; gap:4px; white-space:nowrap; font-weight:600; transition:var(--transition); }
-        .btn:hover { background:var(--surface2); color:var(--text); border-color:var(--accent); }
-        .btn.primary { background:var(--accent); color:#000; border:none; }
+        .header {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .logo .icon {
+            width: 34px;
+            height: 34px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, #38bdf8, #818cf8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        .logo h1 {
+            font-size: 1.1rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #f1f5f9, #38bdf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .search-wrap {
+            flex: 1 1 180px;
+            min-width: 140px;
+            position: relative;
+        }
+        .search-wrap input {
+            width: 100%;
+            padding: 6px 12px 6px 32px;
+            border-radius: 20px;
+            border: 1.5px solid var(--border);
+            background: var(--surface);
+            color: var(--text);
+            font-size: 13px;
+            outline: none;
+        }
+        .search-wrap .search-icon {
+            position: absolute;
+            left: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #64748b;
+            pointer-events: none;
+            font-size: 14px;
+        }
+        .now-playing {
+            background: var(--surface2);
+            padding: 5px 12px;
+            border-radius: 16px;
+            font-size: 11px;
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            flex-shrink: 0;
+        }
+        .now-playing .live-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #22c55e;
+            animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse {
+            0%,
+            100% {
+                box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.6);
+            }
+            50% {
+                box-shadow: 0 0 0 8px rgba(34, 197, 94, 0);
+            }
+        }
+        .header-right {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 5px 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: var(--surface);
+            color: var(--text2);
+            font-size: 11px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+        .btn:hover {
+            background: var(--surface2);
+            color: var(--text);
+            border-color: var(--accent);
+        }
+        .btn.primary {
+            background: var(--accent);
+            color: #000;
+            border: none;
+        }
+        .sync-badge {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 10px;
+            padding: 4px 8px;
+            border-radius: 10px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            cursor: pointer;
+        }
+        .sync-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background: #22c55e;
+        }
+        .sync-dot.offline {
+            background: #ef4444;
+        }
 
         /* PLAYER */
-        .player-wrapper { background:#0a101f; border-radius:12px; overflow:hidden; border:1px solid var(--border); position:relative; }
-        .player-wrapper iframe, .player-wrapper video { width:100%; height:100%; border:0; position:absolute; top:0; left:0; }
-        #playerContainer { width:100%; aspect-ratio:16/9; background:#020617; position:relative; display:flex; align-items:center; justify-content:center; }
-        .fallback-text { color:#475569; text-align:center; padding:20px; }
-        .player-controls { position:absolute; bottom:8px; right:8px; display:flex; gap:4px; z-index:10; }
-        .pip-btn, .fullscreen-btn { background:rgba(0,0,0,0.6); color:#fff; border:none; border-radius:6px; padding:4px 8px; font-size:12px; cursor:pointer; display:none; }
-        .pip-btn.active, .fullscreen-btn.active { display:block; }
+        .player-wrapper {
+            background: #0a101f;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+            position: relative;
+        }
+        #playerContainer {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #020617;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        #playerContainer iframe,
+        #playerContainer video {
+            width: 100%;
+            height: 100%;
+            border: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .fallback-text {
+            color: #475569;
+            text-align: center;
+            padding: 20px;
+            z-index: 0;
+        }
+        .player-controls {
+            position: absolute;
+            bottom: 8px;
+            right: 8px;
+            display: flex;
+            gap: 4px;
+            z-index: 10;
+        }
+        .pip-btn,
+        .fullscreen-btn {
+            background: rgba(0, 0, 0, 0.6);
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 4px 8px;
+            font-size: 12px;
+            cursor: pointer;
+            display: none;
+        }
+        .pip-btn.active,
+        .fullscreen-btn.active {
+            display: block;
+        }
 
         /* TABS */
-        .tabs { display:flex; gap:5px; flex-wrap:wrap; }
-        .tab { padding:6px 14px; border-radius:16px; border:1.5px solid transparent; background:var(--surface); color:var(--text2); font-size:12px; font-weight:600; cursor:pointer; transition:var(--transition); display:flex; align-items:center; gap:5px; }
-        .tab.active { background:#1a2d44; color:#fff; border-color:var(--accent); }
-        .tab .count { background:#1e293b; padding:2px 7px; border-radius:10px; font-size:10px; }
+        .tabs {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+        .tab {
+            padding: 5px 12px;
+            border-radius: 16px;
+            border: 1.5px solid transparent;
+            background: var(--surface);
+            color: var(--text2);
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .tab.active {
+            background: #1a2d44;
+            color: #fff;
+            border-color: var(--accent);
+        }
+        .tab .count {
+            background: #1e293b;
+            padding: 1px 5px;
+            border-radius: 8px;
+            font-size: 9px;
+        }
 
         /* GRID */
-        .channel-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px, 1fr)); gap:8px; min-height:80px; }
-        .channel-card { background:var(--surface); border-radius:var(--card-radius); overflow:hidden; cursor:pointer; transition:var(--transition); border:2px solid transparent; position:relative; display:flex; flex-direction:column; box-shadow:var(--shadow); }
-        .channel-card:hover { transform:translateY(-2px); border-color:#3b4f6b; }
-        .channel-card.active { border-color:var(--accent); box-shadow:0 0 16px rgba(56,189,248,0.3); }
-        .card-thumb { width:100%; aspect-ratio:16/9; background:#1a2335; position:relative; overflow:hidden; }
-        .card-thumb img { width:100%; height:100%; object-fit:cover; }
-        .card-thumb .placeholder { width:100%; height:100%; display:flex; align-items:center; justify-content:center; font-size:28px; position:absolute; inset:0; }
-        .card-info { padding:6px 8px; }
-        .card-name { font-size:12px; font-weight:600; line-height:1.2; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
-        .card-badge { font-size:9px; padding:2px 6px; border-radius:6px; margin-top:3px; display:inline-block; font-weight:700; text-transform:uppercase; }
-        .actions { position:absolute; top:4px; right:4px; display:flex; gap:3px; opacity:0; transition:opacity 0.2s; z-index:5; }
-        .channel-card:hover .actions { opacity:1; }
-        .action-btn { width:22px; height:22px; border-radius:50%; background:rgba(0,0,0,0.7); color:#fff; border:none; font-size:10px; cursor:pointer; display:flex; align-items:center; justify-content:center; }
-        .action-btn:hover { background:#ef4444; }
+        .channel-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 8px;
+            min-height: 80px;
+        }
+        @media (min-width: 600px) {
+            .channel-grid {
+                grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
+            }
+        }
+        .channel-card {
+            background: var(--surface);
+            border-radius: var(--card-radius);
+            overflow: hidden;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 2px solid transparent;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: var(--shadow);
+        }
+        .channel-card:hover {
+            transform: translateY(-2px);
+            border-color: #3b4f6b;
+        }
+        .channel-card.active {
+            border-color: var(--accent);
+            box-shadow: 0 0 16px rgba(56, 189, 248, 0.3);
+        }
+        .card-thumb {
+            width: 100%;
+            aspect-ratio: 16/9;
+            background: #1a2335;
+            position: relative;
+            overflow: hidden;
+        }
+        .card-thumb img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .card-thumb .placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            position: absolute;
+            inset: 0;
+        }
+        .card-info {
+            padding: 5px 7px;
+        }
+        .card-name {
+            font-size: 11px;
+            font-weight: 600;
+            line-height: 1.2;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+        .card-badge {
+            font-size: 8px;
+            padding: 2px 5px;
+            border-radius: 5px;
+            margin-top: 3px;
+            display: inline-block;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .actions {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            display: flex;
+            gap: 3px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            z-index: 5;
+        }
+        .channel-card:hover .actions {
+            opacity: 1;
+        }
+        .action-btn {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.7);
+            color: #fff;
+            border: none;
+            font-size: 10px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .action-btn:hover {
+            background: #ef4444;
+        }
 
         /* ADD SECTION */
-        .add-section { background:var(--surface); border-radius:12px; padding:10px 14px; border:1px dashed #1e3a50; display:flex; flex-wrap:wrap; gap:6px; align-items:center; }
-        .add-section input, .add-section select { padding:6px 10px; border-radius:6px; border:1.5px solid var(--border); background:#0f172a; color:#fff; font-size:12px; flex:1 1 120px; min-width:100px; }
-        body.light .add-section input, body.light .add-section select { background:#f1f5f9; color:#0f172a; }
+        .add-section {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 8px 12px;
+            border: 1px dashed #1e3a50;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            align-items: center;
+        }
+        .add-section input,
+        .add-section select {
+            padding: 5px 8px;
+            border-radius: 6px;
+            border: 1.5px solid var(--border);
+            background: #0f172a;
+            color: #fff;
+            font-size: 11px;
+            flex: 1 1 110px;
+            min-width: 90px;
+        }
+        body.light .add-section input,
+        body.light .add-section select {
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+        .add-section .btn {
+            flex-shrink: 0;
+        }
 
         /* MODAL */
-        .modal { position:fixed; inset:0; background:rgba(0,0,0,0.6); display:flex; align-items:center; justify-content:center; z-index:99; opacity:0; pointer-events:none; transition:opacity 0.2s; }
-        .modal.open { opacity:1; pointer-events:auto; }
-        .modal-content { background:var(--surface); border-radius:12px; padding:16px; width:90%; max-width:400px; }
-        .modal-content h3 { margin-bottom:12px; }
-        .modal-content input, .modal-content select { width:100%; padding:8px; border-radius:6px; border:1px solid var(--border); background:#0f172a; color:#fff; margin-bottom:8px; font-size:12px; }
-        .modal-actions { display:flex; gap:8px; justify-content:flex-end; }
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 99;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+        .modal.open {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-content {
+            background: var(--surface);
+            border-radius: 12px;
+            padding: 16px;
+            width: 90%;
+            max-width: 400px;
+        }
+        .modal-content h3 {
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+        .modal-content input,
+        .modal-content select {
+            width: 100%;
+            padding: 7px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: #0f172a;
+            color: #fff;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+        .modal-actions {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+        }
 
-        .toast { position:fixed; bottom:20px; right:20px; background:#1a2332; color:#e2e8f0; padding:10px 16px; border-radius:8px; font-size:12px; border:1px solid #334155; z-index:999; opacity:0; transform:translateY(20px); transition:all 0.3s; }
-        .toast.show { opacity:1; transform:translateY(0); }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #1a2332;
+            color: #e2e8f0;
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            border: 1px solid #334155;
+            z-index: 999;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.3s;
+            pointer-events: none;
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
     </style>
 </head>
 <body>
     <div class="app">
         <div class="header">
-            <div class="logo"><div class="icon">📡</div><h1>StreamStation Pro</h1></div>
+            <div class="logo">
+                <div class="icon">📡</div>
+                <h1>StreamStation Pro</h1>
+            </div>
+            <div class="search-wrap">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="searchInput" placeholder="Search channels..." autocomplete="off" />
+            </div>
+            <div class="now-playing" id="nowPlayingBadge">
+                <span class="live-dot"></span> <strong id="currentChannelLabel">-</strong>
+            </div>
             <div class="header-right">
-                <span class="sync-badge" id="syncStatus" title="Sync status"><span class="status-dot" id="syncDot"></span> <span id="syncText">Offline</span></span>
+                <span class="sync-badge" id="syncStatus" title="Sync status"><span class="sync-dot" id="syncDot"></span> <span id="syncText">Offline</span></span>
                 <button class="btn" id="compactToggle" title="Compact view">📐 Compact</button>
                 <button class="btn" id="shuffleBtn">🎲 Random</button>
                 <button class="btn" id="exportBtn">💾 Export</button>
                 <button class="btn" id="importBtn">📂 Import</button>
                 <button class="btn" id="themeToggle">🌓</button>
-                <button class="btn" id="settingsBtn">⚙️ Sync Setup</button>
+                <button class="btn" id="settingsBtn">⚙️ Sync</button>
             </div>
         </div>
 
         <div class="player-wrapper">
-            <div id="playerContainer"><div class="fallback-text" id="fallbackText">Select a channel or add a website</div></div>
+            <div id="playerContainer">
+                <div class="fallback-text" id="fallbackText">Select a channel or add a stream below</div>
+            </div>
             <div class="player-controls">
                 <button class="pip-btn" id="pipButton">📌 PiP</button>
                 <button class="fullscreen-btn" id="fullscreenBtn">🖥️ Full</button>
@@ -146,16 +531,16 @@
         <div class="channel-grid" id="channelGrid"></div>
 
         <div class="add-section">
-            <input type="text" id="channelNameInput" placeholder="Title" />
-            <input type="text" id="channelUrlInput" placeholder="Paste URL (video or website)" />
+            <input type="text" id="channelNameInput" placeholder="Stream title" />
+            <input type="text" id="channelUrlInput" placeholder="Paste URL (YouTube, FB, m3u8, website)" />
             <select id="channelCategorySelect">
-                <option value="auto">🤖 Auto</option>
-                <option value="youtube">▶️ YT</option>
-                <option value="facebook">📱 FB</option>
+                <option value="auto">🤖 Auto-detect</option>
+                <option value="youtube">▶️ YouTube</option>
+                <option value="facebook">📱 Facebook</option>
                 <option value="web">🌊 Web/Website</option>
                 <option value="tv">📺 TV</option>
             </select>
-            <button class="btn primary" id="addChannelBtn">➕ Add</button>
+            <button class="btn primary" id="addChannelBtn">➕ Add Stream</button>
         </div>
     </div>
 
@@ -163,7 +548,7 @@
     <div class="modal" id="settingsModal">
         <div class="modal-content">
             <h3>⚙️ Cloud Sync (Firebase)</h3>
-            <p style="font-size:11px;color:var(--text2);margin-bottom:8px;">Enter your Firebase config to enable cross‑device sync. Get yours from Firebase Console → Web App.</p>
+            <p style="font-size:11px;color:var(--text2);margin-bottom:8px;">Enter your Firebase config to sync channels across all devices.</p>
             <input type="text" id="apiKey" placeholder="apiKey" />
             <input type="text" id="authDomain" placeholder="authDomain" />
             <input type="text" id="databaseURL" placeholder="databaseURL" />
@@ -175,47 +560,52 @@
         </div>
     </div>
 
-    <!-- Hidden file input -->
     <input type="file" id="importFileInput" accept=".json" style="display:none">
     <div class="toast" id="toast"></div>
 
     <script>
         (() => {
-            // ── DEFAULTS ──────────────────────────
+            // ── DEFAULT CHANNELS ──────────────────────
             const defaultChannels = [
-                { name:'NASA Live', url:'https://www.youtube.com/watch?v=21X5lGlDOfg', category:'youtube', emoji:'🚀' },
-                { name:'Lofi Girl', url:'https://www.youtube.com/watch?v=jfKfPfyJRdk', category:'youtube', emoji:'🎧' },
-                { name:'FB PlayStation', url:'https://www.facebook.com/PlayStation/videos/10155554431506803/', category:'facebook', emoji:'🎮' },
-                { name:'Mux Test', url:'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category:'web', emoji:'🐰' },
-                { name:'Euronews', url:'https://www.youtube.com/watch?v=MsZd6QrJeME', category:'tv', emoji:'🌍' },
+                { name: 'NASA Live', url: 'https://www.youtube.com/watch?v=21X5lGlDOfg', category: 'youtube',
+                emoji: '🚀' },
+                { name: 'Lofi Girl', url: 'https://www.youtube.com/watch?v=jfKfPfyJRdk', category: 'youtube',
+                emoji: '🎧' },
+                { name: 'FB PlayStation', url: 'https://www.facebook.com/PlayStation/videos/10155554431506803/',
+                    category: 'facebook', emoji: '🎮' },
+                { name: 'Mux Test (m3u8)', url: 'https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8', category: 'web',
+                    emoji: '🐰' },
+                { name: 'Euronews', url: 'https://www.youtube.com/watch?v=MsZd6QrJeME', category: 'tv', emoji: '🌍' },
+                { name: 'TV Garden', url: 'https://tvgarden.garden/', category: 'web', emoji: '📺' },
             ];
 
-            // ── STATE ──────────────────────────────
+            // ── STATE ──────────────────────────────────
             let channels = [];
             let activeIndex = -1;
             let activeCategory = 'all';
             let searchQuery = '';
-            let sortMode = 'default';
             let hlsInstance = null;
             let currentPlayerElement = null;
             let firebaseRef = null;
-            let firebaseConfig = null;
             let isFirebaseActive = false;
 
-            // DOM elements
+            // DOM refs
             const grid = document.getElementById('channelGrid');
             const container = document.getElementById('playerContainer');
             const fallbackText = document.getElementById('fallbackText');
+            const currentLabel = document.getElementById('currentChannelLabel');
             const toastEl = document.getElementById('toast');
             const pipBtn = document.getElementById('pipButton');
             const fullscreenBtn = document.getElementById('fullscreenBtn');
             const syncDot = document.getElementById('syncDot');
             const syncText = document.getElementById('syncText');
             const settingsModal = document.getElementById('settingsModal');
+            const searchInput = document.getElementById('searchInput');
 
-            // ── TOAST ──────────────────────────────
+            // ── TOAST ────────────────────────────────────
             let toastTimer;
-            function showToast(msg, error=false) {
+
+            function showToast(msg, error = false) {
                 clearTimeout(toastTimer);
                 toastEl.textContent = msg;
                 toastEl.style.color = error ? '#fca5a5' : '#e2e8f0';
@@ -223,16 +613,16 @@
                 toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2500);
             }
 
-            // ── URL PARSING & EMBED LOGIC ──────────
+            // ── URL PARSING & CATEGORY DETECTION ──────────
             function detectCategory(url) {
                 const u = url.trim();
                 if (/\.m3u8(\?.*)?$/i.test(u) || /\/hls\//i.test(u)) return 'web';
                 if (/facebook\.com|fb\.watch|fb\.com/i.test(u)) return 'facebook';
                 if (/youtube\.com|youtu\.be|youtube-nocookie\.com/i.test(u)) return 'youtube';
-                // Check if it's a video file
-                if (/\.(mp4|webm|ogg|mp3|wav|flv|avi)(\?.*)?$/i.test(u)) return 'web'; // treat as video
-                // If it starts with http and not a video stream, treat as website
-                if (/^https?:\/\//i.test(u)) return 'web'; // will be embedded as iframe
+                // video files
+                if (/\.(mp4|webm|ogg|mp3|wav|flv|avi)(\?.*)?$/i.test(u)) return 'web';
+                // any other http(s) URL treat as website
+                if (/^https?:\/\//i.test(u)) return 'web';
                 return 'web';
             }
 
@@ -242,23 +632,34 @@
             }
 
             function getYoutubeEmbed(url) {
-                const match = url.match(/(?:youtube(?:-nocookie)?\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i);
+                const match = url.match(
+                    /(?:youtube(?:-nocookie)?\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i
+                    );
                 if (match) return `https://www.youtube-nocookie.com/embed/${match[1]}?autoplay=1&mute=1&controls=1&playsinline=1&rel=0`;
                 return url;
             }
 
+            function getYoutubeThumbnail(url) {
+                const match = url.match(
+                    /(?:youtube(?:-nocookie)?\.com\/(?:[^\/\n\s]+\/\S+\/|(?:v|e(?:mbed)?)\/|\S*?[?&]v=)|youtu\.be\/)([a-zA-Z0-9_-]{11})/i
+                    );
+                return match ? `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg` : null;
+            }
+
             function isWebsiteUrl(url, category) {
-                // If it's not a known video format and it's an http(s) URL, treat as website iframe
-                if (category === 'web' && !/\.m3u8|\.mp4|\.webm|\.ogg|facebook\.com|youtube\.com|youtu\.be|\.m3u|\.ts|\.mpd/i.test(url) && /^https?:\/\//i.test(url)) {
+                if (category === 'web' && !/\.m3u8|\.mp4|\.webm|\.ogg|facebook\.com|youtube\.com|youtu\.be|\.m3u|\.ts|\.mpd/i
+                    .test(url) && /^https?:\/\//i.test(url)) {
                     return true;
                 }
                 return false;
             }
 
-            // ── PLAYER ──────────────────────────────
+            // ── PLAYER ────────────────────────────────────
             function destroyPlayer() {
-                if (hlsInstance) { hlsInstance.destroy(); hlsInstance = null; }
-                if (currentPlayerElement) { currentPlayerElement.remove(); currentPlayerElement = null; }
+                if (hlsInstance) { hlsInstance.destroy();
+                    hlsInstance = null; }
+                if (currentPlayerElement) { currentPlayerElement.remove();
+                    currentPlayerElement = null; }
                 pipBtn.classList.remove('active');
                 fullscreenBtn.classList.remove('active');
             }
@@ -268,20 +669,22 @@
                 fallbackText.style.display = 'none';
                 if (index < 0 || index >= channels.length) {
                     fallbackText.style.display = '';
+                    currentLabel.textContent = '-';
                     return;
                 }
                 const ch = channels[index];
                 activeIndex = index;
                 localStorage.setItem('stream_idx', index);
-                const cat = ch.category;
+                currentLabel.textContent = ch.name;
                 const url = ch.url.trim();
+                const cat = ch.category;
 
-                // Determine playback type
                 if (cat === 'youtube') {
                     const embed = getYoutubeEmbed(url);
                     const iframe = document.createElement('iframe');
                     iframe.src = embed;
-                    iframe.allow = 'autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; fullscreen';
+                    iframe.allow =
+                        'autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; fullscreen';
                     iframe.allowFullscreen = true;
                     iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border:0;';
                     container.appendChild(iframe);
@@ -290,14 +693,21 @@
                     const embed = buildFacebookEmbed(url);
                     const iframe = document.createElement('iframe');
                     iframe.src = embed;
-                    iframe.allow = 'autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; fullscreen';
+                    iframe.allow =
+                        'autoplay; clipboard-write; encrypted-media; picture-in-picture; web-share; fullscreen';
                     iframe.allowFullscreen = true;
                     iframe.style.cssText = 'position:absolute;top:0;left:0;width:100%;height:100%;border:0;';
                     container.appendChild(iframe);
                     currentPlayerElement = iframe;
+                    // Facebook embed may fail silently – show a delayed hint
+                    setTimeout(() => {
+                        if (currentPlayerElement === iframe && container.contains(iframe)) {
+                            showToast('🔒 Facebook video may require you to be logged in and the video to be public.',
+                                true);
+                        }
+                    }, 3000);
                 } else if (cat === 'web' || cat === 'tv') {
                     if (isWebsiteUrl(url, cat)) {
-                        // Embed as website iframe
                         const iframe = document.createElement('iframe');
                         iframe.src = url;
                         iframe.sandbox = 'allow-scripts allow-same-origin allow-popups allow-forms';
@@ -306,7 +716,6 @@
                         container.appendChild(iframe);
                         currentPlayerElement = iframe;
                     } else {
-                        // Video stream (m3u8, mp4, etc.)
                         const video = document.createElement('video');
                         video.controls = true;
                         video.autoplay = true;
@@ -335,7 +744,6 @@
                     }
                 }
                 updateActiveCard();
-                document.getElementById('currentChannelLabel')?.remove(); // not needed
             }
 
             function updateActiveCard() {
@@ -344,7 +752,7 @@
                 });
             }
 
-            // ── GRID RENDER ─────────────────────────
+            // ── GRID RENDERING ────────────────────────────
             function getFilteredSorted() {
                 let list = [...channels];
                 if (activeCategory !== 'all') list = list.filter(c => c.category === activeCategory);
@@ -352,8 +760,6 @@
                     const q = searchQuery.toLowerCase();
                     list = list.filter(c => c.name.toLowerCase().includes(q) || c.url.toLowerCase().includes(q));
                 }
-                if (sortMode === 'name') list.sort((a,b) => a.name.localeCompare(b.name));
-                else if (sortMode === 'category') list.sort((a,b) => a.category.localeCompare(b.category));
                 return list;
             }
 
@@ -361,7 +767,8 @@
                 const filtered = getFilteredSorted();
                 grid.innerHTML = '';
                 if (!filtered.length) {
-                    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:30px;color:#64748b;">📭 No channels</div>';
+                    grid.innerHTML =
+                        '<div style="grid-column:1/-1;text-align:center;padding:30px;color:#64748b;">📭 No channels found</div>';
                     return;
                 }
                 filtered.forEach(ch => {
@@ -371,11 +778,14 @@
                     card.dataset.index = idx;
                     if (idx === activeIndex) card.classList.add('active');
                     let thumbHTML = '';
-                    if (ch.thumbnail) {
-                        thumbHTML = `<img src="${ch.thumbnail}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />`;
-                        thumbHTML += `<div class="placeholder" style="display:none;">${ch.emoji}</div>`;
+                    const thumb = ch.thumbnail || getYoutubeThumbnail(ch.url);
+                    if (thumb) {
+                        thumbHTML =
+                            `<img src="${thumb}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" />`;
+                        thumbHTML +=
+                        `<div class="placeholder" style="display:none;">${ch.emoji || '📡'}</div>`;
                     } else {
-                        thumbHTML = `<div class="placeholder">${ch.emoji}</div>`;
+                        thumbHTML = `<div class="placeholder">${ch.emoji || '📡'}</div>`;
                     }
                     card.innerHTML = `
                         <div class="card-thumb">${thumbHTML}</div>
@@ -408,25 +818,28 @@
             }
 
             function updateCounts() {
-                const counts = { all: channels.length, youtube:0, facebook:0, web:0, tv:0 };
-                channels.forEach(c => { if (counts[c.category]!==undefined) counts[c.category]++; });
-                ['All','Yt','Fb','Web','Tv'].forEach((k,i) => {
-                    const el = document.getElementById('count'+['All','Yt','Fb','Web','Tv'][i]);
-                    if (el) el.textContent = counts[['all','youtube','facebook','web','tv'][i]];
-                });
+                const counts = { all: channels.length, youtube: 0, facebook: 0, web: 0, tv: 0 };
+                channels.forEach(c => { if (counts[c.category] !== undefined) counts[c.category]++; });
+                document.getElementById('countAll').textContent = counts.all;
+                document.getElementById('countYt').textContent = counts.youtube;
+                document.getElementById('countFb').textContent = counts.facebook;
+                document.getElementById('countWeb').textContent = counts.web;
+                document.getElementById('countTv').textContent = counts.tv;
             }
 
             function removeChannel(idx) {
                 const ch = channels[idx];
                 if (isFirebaseActive && ch.firebaseKey && firebaseRef) firebaseRef.child(ch.firebaseKey).remove();
                 channels.splice(idx, 1);
-                if (activeIndex >= channels.length) activeIndex = channels.length-1;
+                if (activeIndex >= channels.length) activeIndex = channels.length - 1;
                 if (activeIndex < 0) activeIndex = -1;
                 saveLocal();
                 renderGrid();
                 if (activeIndex >= 0) playChannel(activeIndex);
-                else { destroyPlayer(); fallbackText.style.display = ''; }
-                showToast(`🗑️ Removed`);
+                else { destroyPlayer();
+                    fallbackText.style.display = '';
+                    currentLabel.textContent = '-'; }
+                showToast('🗑️ Removed');
             }
 
             function addChannel(data) {
@@ -435,28 +848,40 @@
                     url: data.url.trim(),
                     originalUrl: data.url.trim(),
                     category: data.category || detectCategory(data.url),
-                    emoji: data.emoji || ({youtube:'▶️',facebook:'📱',web:'🌐',tv:'📺'}[data.category] || '📡'),
-                    thumbnail: (data.category==='youtube')? (()=>{const m=data.url.match(/(?:v=|\/)([a-zA-Z0-9_-]{11})/); return m?`https://img.youtube.com/vi/${m[1]}/hqdefault.jpg`:null;})() : null,
+                    emoji: data.emoji || ({ youtube: '▶️', facebook: '📱', web: '🌐', tv: '📺' }[data.category] || '📡'),
+                    thumbnail: (data.category === 'youtube') ? getYoutubeThumbnail(data.url) : null,
                     firebaseKey: null
                 };
                 channels.push(enriched);
                 if (isFirebaseActive && firebaseRef) {
                     const newRef = firebaseRef.push();
                     enriched.firebaseKey = newRef.key;
-                    newRef.set({ name:enriched.name, url:enriched.url, category:enriched.category, emoji:enriched.emoji, thumbnail:enriched.thumbnail });
+                    newRef.set({
+                        name: enriched.name,
+                        url: enriched.url,
+                        category: enriched.category,
+                        emoji: enriched.emoji,
+                        thumbnail: enriched.thumbnail
+                    });
                 }
-                activeIndex = channels.length-1;
+                activeIndex = channels.length - 1;
                 saveLocal();
                 renderGrid();
                 playChannel(activeIndex);
                 showToast(`✅ Added "${enriched.name}"`);
             }
 
-            // ── LOCAL STORAGE ──────────────────────
+            // ── LOCAL STORAGE ────────────────────────────
             function saveLocal() {
-                localStorage.setItem('stream_chans', JSON.stringify(channels.map(c => ({
-                    name:c.name, url:c.url, category:c.category, emoji:c.emoji, thumbnail:c.thumbnail, firebaseKey:c.firebaseKey
-                }))));
+                const toSave = channels.map(c => ({
+                    name: c.name,
+                    url: c.url,
+                    category: c.category,
+                    emoji: c.emoji,
+                    thumbnail: c.thumbnail,
+                    firebaseKey: c.firebaseKey
+                }));
+                localStorage.setItem('stream_chans', JSON.stringify(toSave));
                 localStorage.setItem('stream_idx', activeIndex);
             }
 
@@ -465,71 +890,75 @@
                 if (saved) {
                     try {
                         const arr = JSON.parse(saved);
-                        channels = arr.map(c => ({...c, thumbnail:c.thumbnail||null, firebaseKey:c.firebaseKey||null}));
+                        channels = arr.map(c => ({ ...c, thumbnail: c.thumbnail || null, firebaseKey: c.firebaseKey ||
+                                null }));
                         activeIndex = parseInt(localStorage.getItem('stream_idx')) || 0;
-                        if (activeIndex >= channels.length) activeIndex = channels.length>0 ? 0 : -1;
+                        if (activeIndex >= channels.length) activeIndex = channels.length > 0 ? 0 : -1;
                         return true;
-                    } catch(e){}
+                    } catch (e) {}
                 }
                 return false;
             }
 
-            // ── FIREBASE SYNC ──────────────────────
+            // ── FIREBASE SYNC ────────────────────────────
             function initFirebase(config) {
                 if (!config || !config.apiKey || config.apiKey === 'YOUR_API_KEY') return false;
                 try {
                     firebase.initializeApp(config);
                     firebaseRef = firebase.database().ref('channels');
-                    // Clear local channels that don't have firebaseKey (merge later)
                     firebaseRef.once('value', snapshot => {
                         const serverChannels = [];
                         snapshot.forEach(child => {
                             serverChannels.push({ ...child.val(), firebaseKey: child.key });
                         });
-                        // Merge: keep local channels that are not in server, but prefer server ones
-                        const newChannels = [...serverChannels];
+                        // Merge local channels that don't exist on server
+                        const merged = [...serverChannels];
                         channels.forEach(local => {
                             if (!local.firebaseKey && !serverChannels.some(s => s.url === local.url)) {
-                                newChannels.push(local);
+                                merged.push(local);
                             }
                         });
-                        channels = newChannels;
+                        channels = merged;
                         saveLocal();
                         renderGrid();
-                        if (activeIndex >= channels.length) activeIndex = channels.length>0?0:-1;
-                        if (activeIndex >=0) playChannel(activeIndex);
+                        if (activeIndex >= channels.length) activeIndex = channels.length > 0 ? 0 : -1;
+                        if (activeIndex >= 0) playChannel(activeIndex);
                     });
                     firebaseRef.on('child_added', snap => {
                         const data = snap.val();
                         if (!channels.some(c => c.firebaseKey === snap.key)) {
-                            channels.push({...data, firebaseKey: snap.key});
+                            channels.push({ ...data, firebaseKey: snap.key });
                             saveLocal();
                             renderGrid();
                         }
                     });
                     firebaseRef.on('child_removed', snap => {
                         const idx = channels.findIndex(c => c.firebaseKey === snap.key);
-                        if (idx >=0) { channels.splice(idx,1); saveLocal(); renderGrid(); }
+                        if (idx >= 0) { channels.splice(idx, 1);
+                            saveLocal();
+                            renderGrid(); }
                     });
                     firebaseRef.on('child_changed', snap => {
                         const idx = channels.findIndex(c => c.firebaseKey === snap.key);
-                        if (idx >=0) { Object.assign(channels[idx], snap.val()); saveLocal(); renderGrid(); }
+                        if (idx >= 0) { Object.assign(channels[idx], snap.val());
+                            saveLocal();
+                            renderGrid(); }
                     });
                     isFirebaseActive = true;
                     updateSyncUI(true);
                     return true;
-                } catch(e) {
+                } catch (e) {
                     console.warn('Firebase init error', e);
                     return false;
                 }
             }
 
             function updateSyncUI(active) {
-                syncDot.className = 'status-dot ' + (active ? '' : 'offline');
+                syncDot.className = 'sync-dot ' + (active ? '' : 'offline');
                 syncText.textContent = active ? 'Live Sync' : 'Offline';
             }
 
-            // ── EVENT LISTENERS ────────────────────
+            // ── EVENT LISTENERS ───────────────────────────
             function setupUI() {
                 // Tabs
                 document.querySelectorAll('.tab').forEach(tab => {
@@ -543,14 +972,31 @@
 
                 // Add button
                 document.getElementById('addChannelBtn').addEventListener('click', () => {
-                    const name = document.getElementById('channelNameInput').value.trim();
-                    const url = document.getElementById('channelUrlInput').value.trim();
-                    if (!name || !url) return showToast('Fill both fields', true);
-                    let cat = document.getElementById('channelCategorySelect').value;
-                    if (cat === 'auto') cat = detectCategory(url);
-                    addChannel({name, url, category:cat});
-                    document.getElementById('channelNameInput').value = '';
-                    document.getElementById('channelUrlInput').value = '';
+                    const nameInp = document.getElementById('channelNameInput');
+                    const urlInp = document.getElementById('channelUrlInput');
+                    const catSel = document.getElementById('channelCategorySelect');
+                    const name = nameInp.value.trim();
+                    const url = urlInp.value.trim();
+                    if (!name || !url) {
+                        showToast('Please enter both title and URL.', true);
+                        return;
+                    }
+                    let category = catSel.value;
+                    if (category === 'auto') category = detectCategory(url);
+                    addChannel({ name, url, category });
+                    nameInp.value = '';
+                    urlInp.value = '';
+                    catSel.value = 'auto';
+                });
+
+                // Search
+                let debounce;
+                searchInput.addEventListener('input', () => {
+                    clearTimeout(debounce);
+                    debounce = setTimeout(() => {
+                        searchQuery = searchInput.value;
+                        renderGrid();
+                    }, 200);
                 });
 
                 // Compact toggle
@@ -563,7 +1009,7 @@
                 // Theme
                 document.getElementById('themeToggle').addEventListener('click', () => {
                     document.body.classList.toggle('light');
-                    localStorage.setItem('theme', document.body.classList.contains('light')?'light':'dark');
+                    localStorage.setItem('theme', document.body.classList.contains('light') ? 'light' : 'dark');
                 });
                 if (localStorage.getItem('theme') === 'light') document.body.classList.add('light');
 
@@ -578,15 +1024,17 @@
 
                 // Export/Import
                 document.getElementById('exportBtn').addEventListener('click', () => {
-                    const data = JSON.stringify(channels.map(c => ({name:c.name,url:c.url,category:c.category})), null, 2);
-                    const blob = new Blob([data], {type:'application/json'});
+                    const data = JSON.stringify(channels.map(c => ({ name: c.name, url: c.url, category: c.category })),
+                        null, 2);
+                    const blob = new Blob([data], { type: 'application/json' });
                     const a = document.createElement('a');
                     a.href = URL.createObjectURL(blob);
                     a.download = 'streamstation_backup.json';
                     a.click();
                     showToast('💾 Exported');
                 });
-                document.getElementById('importBtn').addEventListener('click', () => document.getElementById('importFileInput').click());
+                document.getElementById('importBtn').addEventListener('click', () => document.getElementById(
+                    'importFileInput').click());
                 document.getElementById('importFileInput').addEventListener('change', (e) => {
                     const file = e.target.files[0];
                     if (!file) return;
@@ -602,8 +1050,10 @@
                 });
 
                 // Settings modal
-                document.getElementById('settingsBtn').addEventListener('click', () => settingsModal.classList.add('open'));
-                document.getElementById('cancelSettings').addEventListener('click', () => settingsModal.classList.remove('open'));
+                document.getElementById('settingsBtn').addEventListener('click', () => settingsModal.classList.add(
+                    'open'));
+                document.getElementById('cancelSettings').addEventListener('click', () => settingsModal.classList.remove(
+                    'open'));
                 document.getElementById('saveSettings').addEventListener('click', () => {
                     const config = {
                         apiKey: document.getElementById('apiKey').value.trim(),
@@ -614,7 +1064,7 @@
                     if (config.apiKey && config.databaseURL) {
                         localStorage.setItem('firebase_config', JSON.stringify(config));
                         if (initFirebase(config)) {
-                            showToast('✅ Sync activated! Channels will appear on all devices.');
+                            showToast('✅ Sync activated! Channels appear on all devices.');
                             settingsModal.classList.remove('open');
                         } else {
                             showToast('❌ Firebase init failed. Check config.', true);
@@ -623,36 +1073,28 @@
                         showToast('Please fill apiKey and databaseURL', true);
                     }
                 });
+            }
 
-                // Search
-                const searchInput = document.getElementById('searchInput');
-                let debounce;
-                searchInput.addEventListener('input', () => {
-                    clearTimeout(debounce);
-                    debounce = setTimeout(() => { searchQuery = searchInput.value; renderGrid(); }, 200);
-                });
-
-                // Load saved Firebase config on startup
+            // ── INIT ──────────────────────────────────────
+            function init() {
+                if (!loadLocal()) {
+                    channels = defaultChannels.map(c => ({ ...c, thumbnail: null, firebaseKey: null }));
+                    activeIndex = 0;
+                    saveLocal();
+                }
+                // Try saved Firebase config
                 const savedConfig = localStorage.getItem('firebase_config');
                 if (savedConfig) {
                     try {
                         const config = JSON.parse(savedConfig);
                         if (config.apiKey && config.apiKey !== 'YOUR_API_KEY') initFirebase(config);
-                    } catch(e){}
-                }
-            }
-
-            // ── INIT ────────────────────────────────
-            function init() {
-                if (!loadLocal()) {
-                    channels = defaultChannels.map(c => ({...c, thumbnail:null, firebaseKey:null}));
-                    activeIndex = 0;
-                    saveLocal();
+                    } catch (e) {}
                 }
                 setupUI();
                 renderGrid();
-                if (activeIndex >=0 && activeIndex < channels.length) playChannel(activeIndex);
-                else if (channels.length) { activeIndex=0; playChannel(0); }
+                if (activeIndex >= 0 && activeIndex < channels.length) playChannel(activeIndex);
+                else if (channels.length) { activeIndex = 0;
+                    playChannel(0); }
                 updateSyncUI(isFirebaseActive);
             }
             init();
