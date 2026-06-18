@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>StreamStation Pro • Cloud Sync & Compact</title>
+    <title>StreamStation Pro • Cloud Sync Active</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js">
     </script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js">
@@ -183,7 +183,7 @@
             border-radius: 8px;
             background: var(--surface);
             border: 1px solid var(--border);
-            cursor: pointer;
+            cursor: default;
         }
         .sync-dot {
             width: 6px;
@@ -509,13 +509,12 @@
                 <span class="live-dot"></span> <strong id="currentChannelLabel">-</strong>
             </div>
             <div class="header-right">
-                <span class="sync-badge" id="syncStatus" title="Sync status"><span class="sync-dot" id="syncDot"></span> <span id="syncText">Offline</span></span>
+                <span class="sync-badge" id="syncStatus" title="Sync active"><span class="sync-dot" id="syncDot"></span> <span id="syncText">Live</span></span>
                 <button class="btn" id="shuffleBtn" title="Random">🎲</button>
                 <button class="btn" id="exportBtn" title="Export">💾</button>
                 <button class="btn" id="importBtn" title="Import">📂</button>
                 <button class="btn" id="compactToggle" title="Compact">📐</button>
                 <button class="btn" id="themeToggle" title="Light/Dark">🌓</button>
-                <button class="btn" id="settingsBtn" title="Sync Setup">⚙️</button>
             </div>
         </div>
 
@@ -573,27 +572,22 @@
         </div>
     </div>
 
-    <!-- Firebase Settings Modal -->
-    <div class="modal" id="settingsModal">
-        <div class="modal-content">
-            <h3>⚙️ Cloud Sync (Firebase)</h3>
-            <p style="font-size:10px;color:var(--text2);margin-bottom:6px;">Enter your Firebase config to auto‑sync channels across all devices.</p>
-            <input type="text" id="apiKey" placeholder="apiKey" />
-            <input type="text" id="authDomain" placeholder="authDomain" />
-            <input type="text" id="databaseURL" placeholder="databaseURL" />
-            <input type="text" id="projectId" placeholder="projectId" />
-            <div class="modal-actions">
-                <button class="btn" id="cancelSettings">Cancel</button>
-                <button class="btn primary" id="saveSettings">Save & Sync</button>
-            </div>
-        </div>
-    </div>
-
     <input type="file" id="importFileInput" accept=".json" style="display:none">
     <div class="toast" id="toast"></div>
 
     <script>
         (() => {
+            // ── YOUR FIREBASE CONFIG – ALREADY EMBEDDED ──
+            const firebaseConfig = {
+                apiKey: "AIzaSyAxf2AANYSTxAHzOzLa4RT8Eyi68Z8b0tA",
+                authDomain: "streamstation-4b55e.firebaseapp.com",
+                databaseURL: "https://streamstation-4b55e-default-rtdb.firebaseio.com", // important: realtime DB URL
+                projectId: "streamstation-4b55e",
+                storageBucket: "streamstation-4b55e.firebasestorage.app",
+                messagingSenderId: "873439558930",
+                appId: "1:873439558930:web:a17d4c50baf18df6abc7cb"
+            };
+
             const defaultChannels = [
                 { name: 'NASA Live', url: 'https://www.youtube.com/watch?v=21X5lGlDOfg', category: 'youtube', emoji: '🚀' },
                 { name: 'Lofi Girl', url: 'https://www.youtube.com/watch?v=jfKfPfyJRdk', category: 'youtube', emoji: '🎧' },
@@ -625,7 +619,6 @@
             const syncText = document.getElementById('syncText');
             const searchInput = document.getElementById('searchInput');
             const editModal = document.getElementById('editModal');
-            const settingsModal = document.getElementById('settingsModal');
 
             let toastTimer;
             function showToast(msg, error = false) {
@@ -935,10 +928,9 @@
                 return false;
             }
 
-            function initFirebase(config) {
-                if (!config || !config.apiKey || config.apiKey === 'YOUR_API_KEY') return false;
+            function initFirebase() {
                 try {
-                    firebase.initializeApp(config);
+                    firebase.initializeApp(firebaseConfig);
                     firebaseRef = firebase.database().ref('channels');
                     firebaseRef.once('value', snapshot => {
                         const serverChannels = [];
@@ -973,16 +965,17 @@
                     });
                     isFirebaseActive = true;
                     updateSyncUI(true);
-                    return true;
+                    showToast('☁️ Cloud sync active – channels shared');
                 } catch (e) {
                     console.warn('Firebase init error', e);
-                    return false;
+                    isFirebaseActive = false;
+                    updateSyncUI(false);
                 }
             }
 
             function updateSyncUI(active) {
                 syncDot.className = 'sync-dot ' + (active ? '' : 'offline');
-                syncText.textContent = active ? 'Synced' : 'Offline';
+                syncText.textContent = active ? 'Live' : 'Off';
             }
 
             function setupUI() {
@@ -1058,31 +1051,9 @@
                 });
                 if (localStorage.getItem('theme') === 'light') document.body.classList.add('light');
 
-                document.getElementById('settingsBtn').addEventListener('click', () => settingsModal.classList.add('open'));
-                document.getElementById('cancelSettings').addEventListener('click', () => settingsModal.classList.remove('open'));
-                document.getElementById('saveSettings').addEventListener('click', () => {
-                    const config = {
-                        apiKey: document.getElementById('apiKey').value.trim(),
-                        authDomain: document.getElementById('authDomain').value.trim(),
-                        databaseURL: document.getElementById('databaseURL').value.trim(),
-                        projectId: document.getElementById('projectId').value.trim(),
-                    };
-                    if (config.apiKey && config.databaseURL) {
-                        localStorage.setItem('firebase_config', JSON.stringify(config));
-                        if (initFirebase(config)) {
-                            showToast('✅ Cloud sync active! All devices see same channels.');
-                            settingsModal.classList.remove('open');
-                        } else {
-                            showToast('❌ Firebase init failed.', true);
-                        }
-                    } else {
-                        showToast('Please fill apiKey and databaseURL', true);
-                    }
-                });
-
                 document.getElementById('cancelEdit').addEventListener('click', () => editModal.classList.remove('open'));
                 document.getElementById('saveEdit').addEventListener('click', saveEdit);
-                window.addEventListener('click', (e) => { if (e.target === editModal) editModal.classList.remove('open'); if (e.target === settingsModal) settingsModal.classList.remove('open'); });
+                window.addEventListener('click', (e) => { if (e.target === editModal) editModal.classList.remove('open'); });
             }
 
             function init() {
@@ -1091,13 +1062,7 @@
                     activeIndex = 0;
                     saveLocal();
                 }
-                const savedConfig = localStorage.getItem('firebase_config');
-                if (savedConfig) {
-                    try {
-                        const config = JSON.parse(savedConfig);
-                        if (config.apiKey && config.apiKey !== 'YOUR_API_KEY') initFirebase(config);
-                    } catch (e) {}
-                }
+                initFirebase(); // auto‑start with your config
                 setupUI();
                 renderGrid();
                 if (activeIndex >= 0 && activeIndex < channels.length) playChannel(activeIndex);
